@@ -15,20 +15,20 @@ class AOM_ctr(EnvExperiment):
     @kernel  # This code runs on the FPGA
     def run(self):
         # Frequencies
-        freq_ch0 = 110000000.0
-        freq_ch1 = 110000000.0
-        freq_ch2 = 110000000.0
-        freq_ch3 = 110000000.0
+        freq_ch0 = 300000.0
+        freq_ch1 = 300000.0
+        freq_ch2 = 300000.0
+        freq_ch3 = 300000.0
         # Amplitudes
-        amp_ch0 = 0.8
-        amp_ch1 = 0.8
-        amp_ch2 = 0.8
-        amp_ch3 = 0.8
+        amp_ch0 = 0.5
+        amp_ch1 = 0.5
+        amp_ch2 = 0.5
+        amp_ch3 = 0.5
         # Attenuations
-        att_ch0 = 5.0
-        att_ch1 = 5.0
-        att_ch2 = 5.0
-        att_ch3 = 5.0
+        att_ch0 = 10.0
+        att_ch1 = 10.0
+        att_ch2 = 10.0
+        att_ch3 = 10.0
         # Output state
         ch0_on = False
         ch1_on = False
@@ -44,18 +44,27 @@ class AOM_ctr(EnvExperiment):
         self.urukul0_ch0.set_att(att_ch0)  # writes attenuation to urukul channel
         self.urukul0_ch0.set(frequency=freq_ch0,
                              amplitude=amp_ch0)  # writes frequency and amplitude variables to urukul channel thus outputting function
+        delay(50 * us)
         # Channel 1 parameters
         self.urukul0_ch1.set_att(att_ch1)  # writes attenuation to urukul channel
         self.urukul0_ch1.set(frequency=freq_ch1,
                              amplitude=amp_ch1)
+        delay(50 * us)
         # Channel 2 parameters
         self.urukul0_ch2.set_att(att_ch2)  # writes attenuation to urukul channel
         self.urukul0_ch2.set(frequency=freq_ch2,
                              amplitude=amp_ch2)
+        delay(50 * us)
         # Channel 3 parameters
-        self.urukul0_ch1.set_att(att_ch3)  # writes attenuation to urukul channel
-        self.urukul0_ch1.set(frequency=freq_ch3,
+        self.urukul0_ch3.set_att(att_ch3)  # writes attenuation to urukul channel
+        self.urukul0_ch3.set(frequency=freq_ch3,
                              amplitude=amp_ch3)
+        delay(50 * us)
+
+        self.urukul0_ch0.sw.off()
+        self.urukul0_ch1.sw.off()
+        self.urukul0_ch2.sw.off()
+        self.urukul0_ch3.sw.off()
 
         if ch0_on: # switches urukul channel 0 on
             self.urukul0_ch0.sw.on()

@@ -15,12 +15,7 @@ from components.FrequencyGeneratorInterfaceAIO import FrequencyGeneratorInterfac
 from controllers.cameras.ThorCam import ThorCam
 from controllers.streamer import WebcamStreamer
 from devices import *
-
-time.sleep(1)
-streamer1 = WebcamStreamer(thorcam_1, "/stream1")
-streamer1.stream()
-streamer2 = WebcamStreamer(thorcam_2, "/stream2")
-streamer2.stream()
+from themes import *
 
 img1 = "./static/img/thorcam_1.jpeg"
 img2 = "./static/img/thorcam_2.jpeg"
@@ -87,7 +82,7 @@ def make_layout():
         id="appshell",
     )
 
-    return dmc.MantineProvider([layout])
+    return dmc.MantineProvider([layout], theme=theme)
 
 # def close_app():
 #     global thorcam_1, thorcam_2, thorSDK

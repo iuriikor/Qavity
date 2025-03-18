@@ -9,7 +9,7 @@ if __name__ == '__main__':
     # layout = app.make_layout()
     app.layout = make_layout()
     threading.Thread(target=app.run_server).start()
-    # webcam_server.run()
+    webcam_server.run()
 
     # print("TERMINATING CONNECTIONS TO HARDWARE")
     # close_app()

@@ -30,12 +30,12 @@ def update_script_values_by_lines(script_path, line_replacements):
     with open(script_path, 'w') as file:
         file.writelines(lines)
 
-
-# Example usage
-script_path = 'experiment_template.py'
-line_replacements = {
-    15: 1,  # Line 11 (0-indexed) will have its value changed to 20
-    16: 3.0,  # Line 16 will have its value changed to 6.7
-}
-
-update_script_values_by_lines(script_path, line_replacements)
+#
+# # Example usage
+# script_path = 'experiment_template.py'
+# line_replacements = {
+#     15: 1,  # Line 11 (0-indexed) will have its value changed to 20
+#     16: 3.0,  # Line 16 will have its value changed to 6.7
+# }
+#
+# update_script_values_by_lines(script_path, line_replacements)

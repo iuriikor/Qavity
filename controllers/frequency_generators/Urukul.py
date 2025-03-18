@@ -2,7 +2,8 @@ from controllers.frequency_generators.FrequencyGenerator import FrequencyGenerat
 import subprocess
 import platform
 from typing import Optional, Dict, List, Union, Tuple
-from ..sinara.modify_experiment import update_script_values_by_lines
+from controllers.sinara.modify_experiment import update_script_values_by_lines
+from controllers.sinara.run_artiq_script import run_artiq_in_clang64_visible
 
 class UrukulFrequencyGenerator(FrequencyGenerator):
     """
@@ -23,12 +24,13 @@ class UrukulFrequencyGenerator(FrequencyGenerator):
         Args:
             device_id: ID of Urukul in case there is more than 1. Not implemented for now.
             channel_params: Dictionary of channel output parameters.
-                    Format: {int ch_num : {frequency: float, amplitude: float, attenuation: float, on: bool}}
+                    Format: {int ch_num : {'frequency': float, 'amplitude': float, 'attenuation': float, 'on': bool}}
             connection_params: IP address of Kasli
         """
         super().__init__(device_id, connection_params)
         self.channel_params = channel_params
         self.output_updated = False
+        self.connect()
 
     def connect(self) -> bool:
         """
@@ -65,9 +67,9 @@ class UrukulFrequencyGenerator(FrequencyGenerator):
         # First we generate a dictionary with line number and new numerical value of variable at that line
         # For every Urukul channel
         for i in range(0,4):
-            updates[starting_line+i] = self.channel_params[i]['frequency'] # Output frequency
-            updates[starting_line+i+5] = self.channel_params[i]['amplitude'] # Channel amplitude
-            updates[starting_line+i+10] = self.channel_params[i]['attenuation'] # Attenuation
+            updates[starting_line+i] = float(self.channel_params[i]['frequency']) # Output frequency
+            updates[starting_line+i+5] = float(self.channel_params[i]['amplitude']) # Channel amplitude
+            updates[starting_line+i+10] = float(self.channel_params[i]['attenuation']) # Attenuation
             updates[starting_line+i+15] = self.channel_params[i]['on'] # If the channel should be on
         # Now we push the updates into the driver script
         try:
@@ -176,6 +178,13 @@ class UrukulFrequencyGenerator(FrequencyGenerator):
             self.logger.error(f"Error getting output state: {str(e)}")
             return False
 
+    def set_waveform(self, waveform: str, channel: int = 1) -> bool:
+        """
+        Urukul does not have this capability and only generates sine wave
+        """
+        self.logger.warning("Urukul only generates sine wave")
+        return True
+
     def is_up_to_date(self):
         return self.output_updated
 
@@ -188,13 +197,14 @@ class UrukulFrequencyGenerator(FrequencyGenerator):
         Returns:
             distance: (m) Total distance travelled (TODO: IMPLEMENT)
         """
-
-        script_name = 'move_particle.py'
+        script_path = 'C:/Users/CavLev/Documents/Qavity/controllers/sinara/move_particle.py'
         detuning_update_line = 15
         time_update_line = 16
-        code_updates = {detuning_update_line: detuning, time_update_line: duration}
+        code_updates = {detuning_update_line: float(detuning), time_update_line:float(duration)}
         try:
-            update_script_values_by_lines(script_name, code_updates)
+            update_script_values_by_lines(script_path, code_updates)
+            print('UPDATING SCRIPT TO MOVE PARTICLES')
+            run_artiq_in_clang64_visible(script_path)
         except Exception as e:
             self.logger.error(f"Error updating the script file: {str(e)}")
         return distance
