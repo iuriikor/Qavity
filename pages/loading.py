@@ -78,10 +78,13 @@ def layout():
     return dmc.MantineProvider(
         [dmc.Flex(
             [
-                CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1, streamer=streamer1),
-                # CameraInterfaceAIO(aio_id='webcam_2', camera=thorcam_2, streamer=streamer2),
-                WebSocket(url=f"ws://127.0.0.1:5000/stream1", id="ws1"),
+                # CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1, streamer=streamer1, name='Loading chamber'),
+                # CameraInterfaceAIO(aio_id='webcam_2', camera=thorcam_2, streamer=streamer2, name='Science chamber outside'),
+                CameraInterfaceAIO(aio_id='webcam_3', camera=xenics_cam, streamer=streamer3,
+                                   name='Science chamber inside'),
+                # WebSocket(url=f"ws://127.0.0.1:5000/stream1", id="ws1"),
                 # WebSocket(url=f"ws://127.0.0.1:5000/stream2", id="ws2"),
+                WebSocket(url=f"ws://127.0.0.1:5000/stream3", id="ws3"),
                 # CameraInterfaceAIO(aio_id='webcam_1', placeholder=img1),
                 # CameraInterfaceAIO(aio_id='webcam_2', placeholder=img2),
                 loading_card,

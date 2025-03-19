@@ -1,0 +1,90 @@
+<html>
+    <head>
+        <title>Xeneth SDK - Working with blobs</title>
+        <style type="text/css">
+            body
+            {
+                font-family: Arial;
+                font-size: 10pt;
+            }
+            
+            .tb
+            {
+                border: 1px solid #000000;
+                width: 100%;
+            
+                font-size: 10pt;
+                
+                border-collapse: collapse;
+            }
+            
+            .tb th
+            {
+                color: #FFFFFF;
+                background: #000000;
+            }
+            
+            .tb td
+            {
+                background: #FBFCFD;
+                padding-left: 5px;
+            }
+            
+            .tb .rtitle
+            {
+                font-weight: bold;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="content">
+            <sub>Supported OS: Windows</sub>
+            <h2>Description</h2>
+            <p>
+                Some cameras support uploading and downloading of large binary objects. These objects can be a firmware image, calibration data, overlay data, ...
+                A few functions are exposed to handle this transaction. Since the existence of these blobs are camera specific you should refer to the camera properties documentation to see which properties are supported.<br />
+                <dl class="note">
+                    <dt>
+                        <b>Note</b>
+                    </dt>
+                    <dd>
+                        This sample was made with a <i>Bobcat-640 - F035</i> camera where we will store the calibration pack, in the camera. Also, a calibration pack is unique to each individual camera, before executing this sample place the calibration pack in this sample's directory.
+                        The name should be pack.xca or change the filename to your custom path.
+                    </dd>
+                </dl> 
+            </p>
+            <h2>Used functions</h2>
+            <p>The following table lists the functions used in this sample:</p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Function</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.open()</td> 
+                            <td align="left">Opens a connection to the camera specified and returns a handle pointing to the camera. The handle is used in all other functions so keep a reference. </td>
+                        </tr>                   
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.is_initialized</td> 
+                            <td align="left">Check if the connection was successfully initialized.</td>
+                        </tr>      
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.set_property_value()</td> 
+                            <td align="left">Upload a <i>binary</i> object to the camera or upload blob to camera using file path.</td>
+                        </tr>      
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.close()</td> 
+                            <td align="left">Closes and cleans up the connection to the camera specified by the handle which was obtained by calling the XCamera.open() function.</td>
+                        </tr>      
+                    </tbody>
+                </table>
+            </p>
+        </div>
+    </body>
+    
+</html>

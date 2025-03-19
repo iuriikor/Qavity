@@ -1,0 +1,84 @@
+<html>
+    <head>
+        <title>Xeneth SDK - GetFrame flags</title>
+        <style type="text/css">
+            body
+            {
+                font-family: Arial;
+                font-size: 10pt;
+            }
+            
+            .tb
+            {
+                border: 1px solid #000000;
+                width: 100%;
+            
+                font-size: 10pt;
+                
+                border-collapse: collapse;
+            }
+            
+            .tb th
+            {
+                color: #FFFFFF;
+                background: #000000;
+            }
+            
+            .tb td
+            {
+                background: #FBFCFD;
+                padding-left: 5px;
+            }
+            
+            .tb .rtitle
+            {
+                font-weight: bold;
+                text-align: left;
+            }
+        </style>
+    </head>
+   
+    <body>
+        <div id="content">
+            <sub>Supported OS: Windows</sub>
+            <h2>Description</h2>
+            <p>
+                This Python script example takes inspiration from the "Basic Sample" script. The primary difference is the frame capturing process. The script captures 5 frames in Non-Blocking mode, followed by 5 frames in Blocking mode, and then 5 frames in NoConversion & Blocking mode.
+            </p>
+            <p>
+                The blocking mode is determined by the flag parameter, which can take one or multiple values from the XGetFrameFlag-enumeration. These flags can be combined using the bitwise OR-operator.
+            </p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Flag</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XGF_Blocking</td> 
+                            <td align="left">By default, the `get_frame` method will return False when no frame is available. If the programmer wants the function to wait until a frame is available, then this flag is passed.</td>
+                        </tr>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XGF_NoConversion</td> 
+                            <td align="left">Internally, for the `get_frame` method, some performance can be gained by setting this flag when grabbing a frame.</td>
+                        </tr>   
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XGF_FetchPFF</td> 
+                            <td align="left">This flag is specific to some types of cameras, like the Onca or Gobi products, and it's not covered in this Python script. It allows to fetch footer information included with the frame coming from the camera, such as timing information, exposure, camera temperature, etc.</td>
+                        </tr>
+                    </tbody>
+                </table>            
+            </p> 
+            <p>
+                <b>Note:</b> The XGF_FetchPFF flag mentioned in the table above is not covered in this Python script sample as it is very specific to the type of camera. For more information about footers, please refer to <b>"Samples -> Python Samples -> Open a camera and get an image -> Footers"</b>.
+            </p>
+            <h2>Used functions</h2>
+            <p>
+                This script uses the same functions as in the "Basic Sample" Python script.
+            </p>
+        </div>
+    </body>
+</html>

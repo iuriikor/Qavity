@@ -1,0 +1,113 @@
+<html>
+    <head>
+        <title>Xeneth SDK - Command and Control</title>
+        <style type="text/css">
+            body
+            {
+                font-family: Arial;
+                font-size: 10pt;
+            }
+            
+            .tb
+            {
+                border: 1px solid #000000;
+                width: 100%;
+            
+                font-size: 10pt;
+                
+                border-collapse: collapse;
+            }
+            
+            .tb th
+            {
+                color: #FFFFFF;
+                background: #000000;
+            }
+            
+            .tb td
+            {
+                background: #FBFCFD;
+                padding-left: 5px;
+            }
+            
+            .tb .rtitle
+            {
+                font-weight: bold;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <div id="content">
+        <sub>Supported OS: Windows</sub>
+        <h2>Description</h2>
+        <p>
+            In situations where the image is grabbed by making use of the analog out connection and control of the camera is required,
+            a special attribute is appended to the query part of the connection URL called fg. This allows to inform the SDK which framegrabber will be used for grabbing images.
+            Although, refer to the sample "Using a framegrabber" for the proper usage of these attributes.
+            Below is a table of different values that can be passed:
+        </p>
+        <p>
+            <table class="tb">
+                <thead> 
+                    <tr>
+                        <th>Values</th> 
+                        <th align="left">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr align="center">
+                        <td valign="top" class="rtitle">none</td> 
+                        <td align="left">Start API in command & control mode (no framegrabbing)</td>
+                    </tr>                   
+                    <tr align="center">
+                        <td valign="top" class="rtitle">XFrameGrabberNative</td> 
+                        <td align="left">The native framegrabber over Ethernet or USB is used.</td>
+                    </tr>                   
+                    <tr align="center">
+                        <td valign="top" class="rtitle">XFrameGrabberNationalInstruments</td> 
+                        <td align="left">for use with the National Instruments framegrabbers like NI PCI-1428 or NI PCIe-1429.</td>
+                    </tr>
+                    <tr align="center">
+                        <td valign="top" class="rtitle">XFrameGrabberEURESYS</td> 
+                        <td align="left">for use with the Euresys GrabLink series frame grabbers.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </p>
+        <p>
+            In this sample we focus on initializing a connection to the camera in command &amp; control mode.
+            Once the camera is initialised the serial en product id is retrieved, more information on how to use all features of the property system can be found in the Properties-samples.
+        </p>
+        <h2>Used functions</h2>
+        <p>The following table lists the functions used in this sample:</p>
+        <p>
+            <table class="tb">
+                <thead> 
+                    <tr>
+                        <th>Function</th> 
+                        <th align="left">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr align="center">
+                        <td valign="top" class="rtitle">XCamera.open</td> 
+                        <td align="left">Opens a connection to the camera specified and returns a handle pointing to the camera. The handle is used in all other functions so keep a reference. </td>
+                    </tr>
+                    <tr align="center">
+                        <td valign="top" class="rtitle">XCamera.is_initialized</td> 
+                        <td align="left">Check if the connection was successfully initialized.</td>
+                    </tr>  
+                    <tr align="center">
+                        <td valign="top" class="rtitle">XCamera.get_property_value</td> 
+                        <td align="left">Gets the property identified by a string of type long.</td>
+                    </tr>  
+                    <tr align="center">
+                        <td valign="top" class="rtitle">XCamera.close</td> 
+                        <td align="left">Closes and cleans up the connection to the camera specified by the handle which was obtained by calling the XCamera.open function.</td>
+                    </tr>                          
+                </tbody>
+            </table>
+        </p>
+    </div>
+    
+</html>

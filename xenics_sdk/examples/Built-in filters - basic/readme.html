@@ -1,0 +1,99 @@
+<html>
+    <head>
+        <title>Xeneth SDK - Built-in filters - basic</title>
+        <style type="text/css">
+            body
+            {
+                font-family: Arial;
+                font-size: 10pt;
+            }
+            
+            .tb
+            {
+                border: 1px solid #000000;
+                width: 100%;
+            
+                font-size: 10pt;
+                
+                border-collapse: collapse;
+            }
+            
+            .tb th
+            {
+                color: #FFFFFF;
+                background: #000000;
+            }
+            
+            .tb td
+            {
+                background: #FBFCFD;
+                padding-left: 5px;
+            }
+            
+            .tb .rtitle
+            {
+                font-weight: bold;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="content">
+            <sub>Supported OS: Windows</sub>
+            <h2>Description</h2>
+            <p>
+                This basic filter sample will demonstrate how to retrieve a list of filters to queue in the image processing pipeline.
+                The xeneth SDK is delivered with a few basic built-in filters and there is also the possibility to load custom external filters.
+                When calling the get_filter_list function a list of filter names is returned. The items from this list are passed with the queue_filter function which returns a handle to this filter on success.
+                We will start 3 built-in filters: Autogain, Gamma and Averaging. Once set-up and the filters are running, a procedure on how to alter the position of the filters in the stack is shown.
+                After which we remove the filters from the stack and terminate the application.
+            </p>
+            <h2>Used XCamera members</h2>
+            <p>The following table lists the functions used in this sample:</p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Function</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.open</td> 
+                            <td align="left">Opens a connection to the camera. </td>
+                        </tr>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.close</td> 
+                            <td align="left">Closes the connection to the camera. </td>
+                        </tr>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.is_initialized</td> 
+                            <td align="left">Check if the connection was successfully initialized.</td>
+                        </tr>     
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.get_filter_list</td> 
+                            <td align="left">Generates list of image filters useable in QueueFilter.</td>
+                        </tr>                   
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.queue_filter</td> 
+                            <td align="left">Queue's the given filter, if found, identified by the string filtername which was retrieved from the filter list.</td>
+                        </tr>                                           
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.is_filter_running</td> 
+                            <td align="left">Checks if a filter has completed it's run cycle.</td>
+                        </tr>                                           
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.pri_image_filter</td> 
+                            <td align="left">Set the filter's position in the filter stack.</td>
+                        </tr>                                           
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.rem_image_filter</td> 
+                            <td align="left">Removes an image filter.</td>
+                        </tr>                                                                                     
+                    </tbody>
+                </table>
+            </p>
+        </div>
+    </body>
+</html>

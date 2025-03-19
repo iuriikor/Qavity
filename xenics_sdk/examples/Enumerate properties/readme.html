@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <title>Xeneth SDK - Built-in filters - overlay</title>
+        <style type="text/css">
+            body
+            {
+                font-family: Arial;
+                font-size: 10pt;
+            }
+            
+            .tb
+            {
+                border: 1px solid #000000;
+                width: 100%;
+            
+                font-size: 10pt;
+                
+                border-collapse: collapse;
+            }
+            
+            .tb th
+            {
+                color: #FFFFFF;
+                background: #000000;
+            }
+            
+            .tb td
+            {
+                background: #FBFCFD;
+                padding-left: 5px;
+            }
+            
+            .tb .rtitle
+            {
+                font-weight: bold;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="content">
+            <sub>Supported OS: Windows</sub>
+            <h2>Description</h2>
+            <p>
+                In this samples all functions for retrieving en writing properties are demonstrated. The count of all properties is requested, base on this count every property is enumerated with specific details about this property.
+            </p>
+            <h2>Used members</h2>
+            <p>The following table lists the members used in this sample:</p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Member</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">open</td> 
+                            <td align="left">Opens a connection to the camera specified.</td>
+                        </tr>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">is_initialized</td> 
+                            <td align="left">Check if the connection was successfully initialized.</td>
+                        </tr>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">close</td> 
+                            <td align="left">Closes and cleans up the connection to the camera.</td>
+                        </tr>                          
+                        <tr align="center">
+                            <td valign="top" class="rtitle">get_property_count</td> 
+                            <td align="left">Gets the number of properties.</td>
+                        </tr>                          
+                        <tr align="center">
+                            <td valign="top" class="rtitle">get_property_name</td> 
+                            <td align="left">Gets the property name.</td>
+                        </tr>          
+                        <tr align="center">
+                            <td valign="top" class="rtitle">get_property_category</td> 
+                            <td align="left">Gets the property category.</td>
+                        </tr>  
+                        <tr align="center">
+                            <td valign="top" class="rtitle">get_property_type</td> 
+                            <td align="left">Retrieves the type of a property </td>
+                        </tr>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">get_property_range</td> 
+                            <td align="left">Retrieves the boundaries of a property For an enumerated type this is a list of possible values, for numeric types it returns "lowvalue>highvalue". </td>
+                        </tr>   
+                        <tr align="center">
+                            <td valign="top" class="rtitle">get_property_unit</td> 
+                            <td align="left">Retrieve units supported by this property, default unit comes first.</td>
+                        </tr>    
+                        <tr align="center">
+                            <td valign="top" class="rtitle">get_property_value</td> 
+                            <td align="left">Retrieve a value from the camera specified by the property name.</td>
+                        </tr>                            
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.get_property_blob</td> 
+                            <td align="left">Retrieve a binary large object (blob) from the camera, this is usually firmware, calibration data, or overlay data.</td>
+                        </tr>                           
+                    </tbody>
+                </table>
+            </p>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <title>Xeneth SDK - Software correction</title>
+        <style type="text/css">
+            body
+            {
+                font-family: Arial;
+                font-size: 10pt;
+            }
+            
+            .tb
+            {
+                border: 1px solid #000000;
+                width: 100%;
+            
+                font-size: 10pt;
+                
+                border-collapse: collapse;
+            }
+            
+            .tb th
+            {
+                color: #FFFFFF;
+                background: #000000;
+            }
+            
+            .tb td
+            {
+                background: #FBFCFD;
+                padding-left: 5px;
+            }
+            
+            .tb .rtitle
+            {
+                font-weight: bold;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="content">
+            <sub>Supported OS: Windows</sub>
+            <h2>Description</h2>
+            <p>
+                This Python example demonstrates how to load a calibration pack into the Xeneth SDK for image correction. The calibration pack can be provided with the camera or created using the Xeneth calibration wizard.
+                Refer to the Xeneth manual for guidance on creating a calibration pack. Please note that as these packs are specific to each camera type, one is not provided with this example.
+                Instead, you should place your own pack in the root folder of this example and name it "pack.xca" or adjust the 'packname' variable in the main function of the Python script.
+                The example also manually starts a SoftwareCorrection filter and retrieves its parameters.
+            </p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Flag</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XLC_StartSoftwareCorrection</td> 
+                            <td align="left">Starts the software correction filter after unpacking the calibration data.</td>
+                        </tr> 
+                    </tbody>
+                </table>
+            </p>
+            <h2>Used methods</h2>
+            <p>The following table lists the Python methods used in this sample:</p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Method</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.open</td> 
+                            <td align="left">Opens a connection to the camera at the given URL.</td>
+                        </tr>       
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.is_initialized</td> 
+                            <td align="left">Checks if the connection to the camera was successfully initialized.</td>
+                        </tr>    
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.load_calibration</td> 
+                            <td align="left">Loads sensor calibration data from the specified file.</td>
+                        </tr>    
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.queue_filter</td> 
+                            <td align="left">Queues a filter with the given name into the camera's filter system.</td>
+                        </tr>    
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.recv_stream</td> 
+                            <td align="left">Receives a settings data stream from the filter with the given filter ID.</td>
+                        </tr>    
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XCamera.close</td> 
+                            <td align="left">Closes the connection to the camera and cleans up any resources.</td>
+                        </tr>                            
+                    </tbody>
+                </table>
+            </p>
+        </div>
+    </body>
+    
+</html>

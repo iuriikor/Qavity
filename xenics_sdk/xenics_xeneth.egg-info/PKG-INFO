@@ -1,0 +1,22 @@
+Metadata-Version: 2.2
+Name: xenics-xeneth
+Version: 0.1.0
+Summary: Xenics XenEth python SDK
+Home-page: https://www.xenics.com/
+License: Proprietary
+Keywords: xenics,xeneth,sdk
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: Proprietary
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Requires-Python: >3.9
+Requires-Dist: numpy
+Dynamic: classifier
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

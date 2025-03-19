@@ -55,6 +55,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         aio_id=None,
         camera=None,
         streamer = None,
+        name = None,
         placeholder=None
     ):
         # If aio_id is not provided, use a generated id
@@ -68,10 +69,13 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         if placeholder is not None:
             self._placeholder = placeholder
 
+        default_exp = camera.get_exposure_ms()
         # Merge user-supplied properties into default properties
         htmlImg_props = htmlImg_props.copy() if htmlImg_props else {} # copy the dict so as to not mutate the user's dict
 
         # Define the component's layout
+        cam_name = dmc.CardSection([dmc.Text(name, size='xl')],
+                            withBorder=True, py="xs", inheritPadding=True)
         dropdown = dmc.Menu(
     [
         dmc.MenuTarget(dmc.ActionIcon(DashIconify(icon="material-symbols:settings"), size="input-sm")),
@@ -79,7 +83,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             [
                 dmc.MenuLabel("Camera Settings"),
                 dmc.MenuItem("Exposure:",
-                             rightSection=dmc.NumberInput(value=5, debounce=True,
+                             rightSection=dmc.NumberInput(value=default_exp, debounce=True,
                                                           suffix=' ms', w=100,
                                                           id=self.ids.exposureControlInput(aio_id))),
             ]),
@@ -103,12 +107,16 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         # Hidden Div to mitigate problems with callbacks without Output
         hidden_div = html.Div([], id=self.ids.hidden_div(aio_id), style={'display': 'none'})
         #%% LAYOUT DEFINITION
-        layout = dmc.Flex([],
-                          direction='column',
-                          style={'width': '400px', 'padding': '10px',
-                                'border': 'solid', 'border-radius': '20px',
-                                'margin': '20px'}
-                          )
+        # layout = dmc.Flex([],
+        #                   direction='column',
+        #                   style={'width': '400px', 'padding': '10px',
+        #                         'border': 'solid', 'border-radius': '20px',
+        #                         'margin': '20px'}
+        #                   )
+        layout = dmc.Card(
+            children=[cam_name, menu, camera_screen, hidden_div],
+            style={'width': '400px', 'padding': 'xs', 'margin': '20px'}
+        )
         layout.children = [hidden_div, menu, camera_screen]
         super().__init__(layout)
 
@@ -138,7 +146,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             return ''
         print(f'Camera {aio_id} starting stream')
         camera.start_stream()
-        streamer.stream()
+        # streamer.stream()
         return ''
 
     @callback(
@@ -174,6 +182,6 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         except Exception as e:
             print(f'Camera using placeholder: {str(e)}')
             return ''
-        camera.set_exposure(exposure)
+        camera.set_exposure_ms(exposure)
         print(f'Camera {aio_id}: exposure set to {exposure}')
         return ''

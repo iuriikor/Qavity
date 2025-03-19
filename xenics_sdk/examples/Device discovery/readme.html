@@ -1,0 +1,135 @@
+<html>
+    <head>
+        <title>Xeneth SDK - Device discovery</title>
+        <style type="text/css">
+            body
+            {
+                font-family: Arial;
+                font-size: 10pt;
+            }
+            
+            .tb
+            {
+                border: 1px solid #000000;
+                width: 100%;
+            
+                font-size: 10pt;
+                
+                border-collapse: collapse;
+            }
+            
+            .tb th
+            {
+                color: #FFFFFF;
+                background: #000000;
+            }
+            
+            .tb td
+            {
+                background: #FBFCFD;
+                padding-left: 5px;
+            }
+            
+            .tb .rtitle
+            {
+                font-weight: bold;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="content">
+            <sub>Supported OS: Windows</sub>
+            <h2>Description</h2>
+            <p>
+                Since Xeneth 2.5 a new device discovery method was introduced to provide a simplified method of device discovery.
+                The user is able to speed up discovery by only enabling the required protocols using the flags argument of the new XCD_EnumerateDevices function.
+                For each discovered device a structure is returned with device information identifying camera name, serial, pid, location and transport. 
+                In this sample we will demonstrate a typical device discovery situation and print the device information to console for each discovered device. 
+                By making use of the URL it is possible to establish a connection to the device in question.
+            </p><p>
+                To continue with establishing a connection refer to <b>"Samples -> Python Samples -> Open a camera and get an image -> Basic Sample"</b> to learn more.
+            </p>
+            <h2>Used functions</h2>
+            <p>The following table lists the functions used in this sample:</p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Function</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">enumerate_devices</td> 
+                            <td align="left">Perform device enumeration while being able to determine on which protocols device discovery should occur.</td>
+                        </tr>
+                        </tbody>
+                </table>
+            </p>
+            <h2>Used enumerations</h2>
+            <p>The following table lists the XEnumerationFlags enum and their values used in this sample:</p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Key</th> 
+							<th>Value</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">XEF_Network</td> 
+							<td align="left" class="rtitle">0x00000001</td> 
+                            <td align="left">Enables the Xenics network protocol.</td>
+                        </tr>   						
+						<tr align="center">
+                            <td valign="top" class="rtitle">XEF_Serial</td> 
+							<td align="left" class="rtitle">0x00000002</td> 
+                            <td align="left">Enables the Xenics serial protocol.</td>
+                        </tr>   						
+						<tr align="center">
+                            <td valign="top" class="rtitle">XEF_CameraLink</td> 
+							<td align="left" class="rtitle">0x00000004</td> 
+                            <td align="left">Enables the CameraLink protocol.</td>
+                        </tr>   						
+						<tr align="center">
+                            <td valign="top" class="rtitle">XEF_GigEVision</td> 
+							<td align="left" class="rtitle">0x00000008</td> 
+                            <td align="left">Enables the GigE Vision protocol.</td>
+                        </tr>   						
+						<tr align="center">
+                            <td valign="top" class="rtitle">XEF_CoaXPress</td> 
+							<td align="left" class="rtitle">0x00000010</td> 
+                            <td align="left">Enables the CoaXPress protocol.</td>
+                        </tr>   						
+						<tr align="center">
+                            <td valign="top" class="rtitle">XEF_USB</td> 
+							<td align="left" class="rtitle">0x00000020</td> 
+                            <td align="left">Enables the USB protocol.</td>
+                        </tr>   						
+						<tr align="center">
+                            <td valign="top" class="rtitle">XEF_EnableAll</td> 
+							<td align="left" class="rtitle">0x0000FFFF</td> 
+                            <td align="left">Enable enumeration for all available protocols.</td>
+                        </tr>
+						<tr align="center">
+                            <td valign="top" class="rtitle">XEF_UseCached</td> 
+							<td align="left" class="rtitle">0x01000000</td> 
+                            <td align="left">Retrieve devices available in the cache, when this flag is combined with other flags the rest is ignored.</td>
+                        </tr>   						
+						<tr align="center">
+                            <td valign="top" class="rtitle">XEF_ReleaseCache</td> 
+							<td valign="top" align="left" class="rtitle">0x02000000</td> 
+                            <td align="left">Release devices in the internal cache. It is not neccessary to call XCD_EnumeraDevices using this flag since cleanup is handled automatically on library unload.
+							Still when needed some memory can be released using this flag.</td>
+                        </tr>
+                    </tbody>
+                </table>
+				<p><i>These flags can be OR'ed together to enable one or many protocols. XEF_EnableAll is there for convencience when all protocols should be enabled.</i></p>
+            </p>
+        </div>
+    </body>
+</html>

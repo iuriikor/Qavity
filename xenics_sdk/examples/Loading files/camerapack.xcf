@@ -1,0 +1,14 @@
+<?xml version="2.8.0.334" encoding="UTF-8"?>
+<Settings xmlns="http://dev.xenics.com/schemas/settings" productid="F035">
+  <Setting brief="DeviceVTestGVoltage" value="2.999414" unit="" origin="camera" type="769"/>
+  <Setting brief="DeviceDetSubVoltage" value="2.999414" unit="" origin="camera" type="769"/>
+  <Setting brief="DeviceVcmVoltage" value="1.78" unit="" origin="camera" type="769"/>
+  <Setting brief="DeviceCtiaRefVoltage" value="2.498974" unit="" origin="camera" type="769"/>
+  <Setting brief="DeviceROICBiasCurrent" value="13" unit="" origin="camera" type="770"/>
+  <Setting brief="DeviceGain" value="1" unit="" origin="camera" type="770"/>
+  <Setting brief="CoolingMode" value="0" unit="" origin="camera" type="770"/>
+  <Setting brief="CoolingTargetTemperature" value="24.99" unit="" origin="camera" type="769"/>
+  <Setting brief="CoolingPower" value="14.999619" unit="" origin="camera" type="769"/>
+  <Setting brief="ExposureTimeAbs" value="5000" unit="" origin="camera" type="769"/>
+  <Setting brief="IntegrationMode" value="0" unit="" origin="camera" type="770"/>
+</Settings>

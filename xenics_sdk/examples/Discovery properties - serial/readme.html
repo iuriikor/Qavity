@@ -1,0 +1,77 @@
+<html>
+    <head>
+        <title>Xeneth SDK - Discovery properties - Serial</title>
+        <style type="text/css">
+            body
+            {
+                font-family: Arial;
+                font-size: 10pt;
+            }
+            
+            .tb
+            {
+                border: 1px solid #000000;
+                width: 100%;
+            
+                font-size: 10pt;
+                
+                border-collapse: collapse;
+            }
+            
+            .tb th
+            {
+                color: #FFFFFF;
+                background: #000000;
+            }
+            
+            .tb td
+            {
+                background: #FBFCFD;
+                padding-left: 5px;
+            }
+            
+            .tb .rtitle
+            {
+                font-weight: bold;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="content">
+            <sub>Supported OS: Windows</sub>
+            <h2>Description</h2>
+            <p>				
+				By default Xeneth is configured to scan COM ports 1 to 4 of the computer.
+				In some cases the user has more ports or is unable to assign the port in question to a lower range.
+				It is possible to alter these default scan ranges by changing the device discovery properties prior to
+				calling the enumeration function.    
+            </p><p>
+				To enumerate these properties some utility functions have become available, which operates the same as
+				the camera object property system utility functions.
+			</p>			
+            <h2>Used functions</h2>
+            <p>The following table lists the functions used in this sample:</p>
+            <p>
+                <table class="tb">
+                    <thead> 
+                        <tr>
+                            <th>Function</th> 
+                            <th align="left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr align="center">
+                            <td valign="top" class="rtitle">get_property_value</td> 
+                            <td align="left">Gets a value from the discovery properties system</td>
+                        </tr>         
+                        <tr align="center">
+                            <td valign="top" class="rtitle">set_property_value</td> 
+                            <td align="left">Sets a value in the discovery properties system</td>
+                        </tr>        						
+                    </tbody>
+                </table>
+            </p>
+        </div>
+    </body>
+</html>
