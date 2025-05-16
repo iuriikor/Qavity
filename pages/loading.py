@@ -2,10 +2,10 @@ import dash
 from dash import callback, Input, Output, State, MATCH, ALL, callback_context, html
 
 import dash_mantine_components as dmc
-from pydantic.v1 import NoneStr
 
 from components.CameraInterfaceAIO import CameraInterfaceAIO
 from components.FrequencyGeneratorInterfaceAIO import FrequencyGeneratorInterfaceAIO
+from components.RelayBoardAIO import RelayBoardAIO
 from dash_extensions import WebSocket
 
 from devices import *
@@ -21,7 +21,7 @@ def layout():
     img2 = "./static/img/thorcam_2.jpeg"
 
 
-    loading_card = dmc.Card([], withBorder=True, padding='xs')
+    loading_card = dmc.Card([], withBorder=True, padding='xs', style={'margin': '10px'})
     title = dmc.CardSection([dmc.Text('Particle loading control', size='xl')],
                             withBorder=True, py="xs", inheritPadding=True)
     sync_btn = dmc.Button("Update Urukul and run",
@@ -61,33 +61,24 @@ def layout():
 
     loading_card.children = [title, sync_btn, aom_controls, run_loading_card]
 
-    # return dmc.MantineProvider(
-    #     [dmc.Flex(
-    #         [
-    #     # CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1),
-    #     # CameraInterfaceAIO(aio_id='webcam_2', camera=thorcam_2),
-    #     CameraInterfaceAIO(aio_id='webcam_1', placeholder=img1),
-    #     CameraInterfaceAIO(aio_id='webcam_2', placeholder=img2),
-    #     FrequencyGeneratorInterfaceAIO(aio_id='urukul_ch0', name='Loading AOM',
-    #                                    device=urukul_loading, ch=0),
-    #     FrequencyGeneratorInterfaceAIO(aio_id='urukul_ch1', name='Science AOM',
-    #                                    device=urukul_loading, ch=1),
-    #         ]),
-    # ])
+    relay_control_card = RelayBoardAIO(aio_id="relay_controller_interface",
+                                       device=valve_control_board)
 
     return dmc.MantineProvider(
         [dmc.Flex(
             [
-                # CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1, streamer=streamer1, name='Loading chamber'),
-                # CameraInterfaceAIO(aio_id='webcam_2', camera=thorcam_2, streamer=streamer2, name='Science chamber outside'),
-                CameraInterfaceAIO(aio_id='webcam_3', camera=xenics_cam, streamer=streamer3,
-                                   name='Science chamber inside'),
-                # WebSocket(url=f"ws://127.0.0.1:5000/stream1", id="ws1"),
-                # WebSocket(url=f"ws://127.0.0.1:5000/stream2", id="ws2"),
-                WebSocket(url=f"ws://127.0.0.1:5000/stream3", id="ws3"),
+                CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1, streamer=streamer1, name='Loading chamber'),
+                CameraInterfaceAIO(aio_id='webcam_2', camera=thorcam_2, streamer=streamer2,
+                                   name='Science chamber outside'),
+                # CameraInterfaceAIO(aio_id='webcam_3', camera=xenics_cam, streamer=streamer3,
+                #                    name='Science chamber inside'),
+                WebSocket(url=f"ws://127.0.0.1:5000/stream1", id="ws1"),
+                WebSocket(url=f"ws://127.0.0.1:5000/stream2", id="ws2"),
+                # WebSocket(url=f"ws://127.0.0.1:5000/stream3", id="ws3"),
                 # CameraInterfaceAIO(aio_id='webcam_1', placeholder=img1),
                 # CameraInterfaceAIO(aio_id='webcam_2', placeholder=img2),
                 loading_card,
+                relay_control_card
             ]),
         ])
 

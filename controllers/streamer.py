@@ -32,9 +32,11 @@ class WebcamStreamer:
 
                     frame = self._camera.get_frame()
                     if frame is not None:
-                        print('STREAMER SIDE: FRAME IS NOT NONE')
+                        # print('STREAMER SIDE: FRAME IS NOT NONE')
                         _, jpeg = cv2.imencode('.jpg', frame)
                         await websocket.send(f"data:image/jpeg;base64, {base64.b64encode(jpeg.tobytes()).decode()}")
+                        jpeg = None
+                        # await websocket.send(jpeg.tobytes())
                     await asyncio.sleep(1 / self._camera.framerate)
             except asyncio.CancelledError:
                 print(f'CAMERA {self._camera.id} WEBSOCKET DISCONNECTED')

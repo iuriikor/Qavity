@@ -71,11 +71,14 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
 
         default_exp = camera.get_exposure_ms()
         # Merge user-supplied properties into default properties
+        default_img_style = {'max-width': '20%', 'padding': '5px 0px 0px 0px', 'margin-top': 'xs'}
         htmlImg_props = htmlImg_props.copy() if htmlImg_props else {} # copy the dict so as to not mutate the user's dict
+        if 'style' in htmlImg_props:
+            htmlImg_props['style'].update(default_img_style)
 
         # Define the component's layout
-        cam_name = dmc.CardSection([dmc.Text(name, size='xl')],
-                            withBorder=True, py="xs", inheritPadding=True)
+        # cam_name = dmc.CardSection([dmc.Text(name, size='xl')],
+        #                     withBorder=True, py="xs", inheritPadding=True)
         dropdown = dmc.Menu(
     [
         dmc.MenuTarget(dmc.ActionIcon(DashIconify(icon="material-symbols:settings"), size="input-sm")),
@@ -88,7 +91,9 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                                                           id=self.ids.exposureControlInput(aio_id))),
             ]),
     ],closeOnItemClick=False, closeOnClickOutside=True)
-        menu = dmc.Flex(
+        menu = dmc.CardSection([
+            dmc.Text(name, size='xl'),
+            dmc.Flex(
             [
                 dmc.ButtonGroup(
                     [
@@ -97,13 +102,14 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                     ]),
                 dmc.Flex(dropdown),
             ], align='center', justify='space-between')
+        ], withBorder=True, py="xs", inheritPadding=True)
 
         if camera is None:
             print("CAMERA NOT FOUND - USING PLACEHOLDER")
             camera_screen = html.Img(src=self._placeholder, id=self.ids.htmlImg(aio_id),
-                                     style={'max-width': '100%', 'padding': '5px 0px 0px 0px'})
+                                     **htmlImg_props)
         else:
-            camera_screen = html.Img(id=self.ids.htmlImg(aio_id), style={'max-width': '100%'})
+            camera_screen = html.Img(id=self.ids.htmlImg(aio_id), **htmlImg_props)
         # Hidden Div to mitigate problems with callbacks without Output
         hidden_div = html.Div([], id=self.ids.hidden_div(aio_id), style={'display': 'none'})
         #%% LAYOUT DEFINITION
@@ -114,10 +120,10 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         #                         'margin': '20px'}
         #                   )
         layout = dmc.Card(
-            children=[cam_name, menu, camera_screen, hidden_div],
-            style={'width': '400px', 'padding': 'xs', 'margin': '20px'}
+            children=[],
+            style={'width': '400px', 'padding': 'xs', 'margin': '10px'}
         )
-        layout.children = [hidden_div, menu, camera_screen]
+        layout.children = [menu, camera_screen, hidden_div]
         super().__init__(layout)
 
     @staticmethod

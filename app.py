@@ -1,6 +1,7 @@
 from dash import html, Input, Output, State, callback, page_container
 from dash_extensions import WebSocket
 import dash_mantine_components as dmc
+from dash_iconify import DashIconify
 
 import asyncio
 from quart import websocket
@@ -40,7 +41,9 @@ def make_layout():
         dmc.Anchor(
             dmc.Button("Home", variant="subtle", color="gray"),
             href='/'),
-        dmc.Button("Calibration", variant="subtle", color="gray"),
+        dmc.Anchor(
+            dmc.Button("Monitors", variant="subtle", color="gray"),
+            href='/monitors'),
         dmc.Anchor(
             dmc.Button("Loading", variant="subtle", color="gray"),
                         href='/loading'),
@@ -48,6 +51,14 @@ def make_layout():
         dmc.Button("Detection", variant="subtle", color="gray"),
         dmc.Button("System Info", variant="subtle", color="gray"),
     ]
+
+    theme_toggle = dmc.Switch(
+        offLabel=DashIconify(icon="radix-icons:sun", width=15, color=dmc.DEFAULT_THEME["colors"]["yellow"][8]),
+        onLabel=DashIconify(icon="radix-icons:moon", width=15, color=dmc.DEFAULT_THEME["colors"]["yellow"][6]),
+        id="color-scheme-switch",
+        persistence=True,
+        color="grey",
+    )
 
     layout = dmc.AppShell(
         [
@@ -58,6 +69,7 @@ def make_layout():
                             [
                                 dmc.Image(src=logo, h=40),
                                 dmc.Title("Demo App", c="blue"),
+                                theme_toggle
                             ]
                         ),
                         dmc.Group(
@@ -82,7 +94,8 @@ def make_layout():
         id="appshell",
     )
 
-    return dmc.MantineProvider([layout], theme=theme)
+    return dmc.MantineProvider([layout],
+                               theme=theme)
 
 # def close_app():
 #     global thorcam_1, thorcam_2, thorSDK

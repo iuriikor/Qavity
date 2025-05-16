@@ -9,3 +9,15 @@ theme={
         }
     }
 }
+
+theme_dark={
+    "primaryColor": "indigo",
+    "defaultRadius": "md",
+    "components": {
+        "Card": {
+            "defaultProps": {
+                "shadow": "md"
+            }
+        }
+    }
+}

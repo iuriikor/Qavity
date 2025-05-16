@@ -4,6 +4,7 @@ from xenics.xeneth.errors import XenethAPIException
 from .Camera import Camera
 
 import time
+import cv2
 
 
 
@@ -46,7 +47,7 @@ class Xenics(Camera):
             print('XENICS: buffer initialized correctly')
             if self._camera.get_frame(self._buffer, flags=XGetFrameFlags.XGF_Blocking):
                 print('XENICS: image acquired and not None')
-                return self._buffer.image_data
+                return cv2.normalize(self._buffer.image_data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
             else:
                 return None
         else:
