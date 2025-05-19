@@ -34,7 +34,8 @@ class WebcamStreamer:
                     if frame is not None:
                         # print('STREAMER SIDE: FRAME IS NOT NONE')
                         _, jpeg = cv2.imencode('.jpg', frame)
-                        await websocket.send(f"data:image/jpeg;base64, {base64.b64encode(jpeg.tobytes()).decode()}")
+                        # await websocket.send(f"data:image/jpeg;base64, {base64.b64encode(jpeg.tobytes()).decode()}")
+                        await websocket.send(jpeg.tobytes())
                         jpeg = None
                         # await websocket.send(jpeg.tobytes())
                     await asyncio.sleep(1 / self._camera.framerate)

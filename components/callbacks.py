@@ -15,28 +15,110 @@ from server import app
 # #     Input(f"ws2", "message")
 # # )
 
-# Direct callback for WebSocket message to image
+# # Direct callback for WebSocket message to image
+# app.clientside_callback(
+#     """
+#     function(message) {
+#         if (message && message.data) {
+#             return message.data;
+#         }
+#         return "";
+#     }
+#     """,
+#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_1'), "src"),
+#     Input("ws1", "message")
+# )
+#
+# # Direct callback for WebSocket message to image
+# app.clientside_callback(
+#     """
+#     function(message) {
+#         if (message && message.data) {
+#             return message.data;
+#         }
+#         return "";
+#     }
+#     """,
+#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_2'), "src"),
+#     Input("ws2", "message")
+# )
+#
+
+# Handle binary data from websocket and update HtmlIMG src directly
 app.clientside_callback(
     """
     function(message) {
-        if (message && message.data) {
-            return message.data;
+        if (!message) return "";
+
+        // Initialize window state if not exists
+        if (!window.webcam1State) {
+            window.webcam1State = {
+                frameCount: 0,
+                prevBlobUrl: null
+            };
         }
-        return "";
+        
+        try {
+            // Increment frame count
+            window.webcam1State.frameCount++;
+
+            // Create a blob from the binary message
+            const blob = new Blob([message.data], {type: 'image/jpeg'});
+
+            // Clean up previous blob URL
+            if (window.webcam1State.prevBlobUrl) {
+                URL.revokeObjectURL(window.webcam1State.prevBlobUrl);
+            }
+
+            // Create and store new blob URL
+            const url = URL.createObjectURL(blob);
+            window.webcam1State.prevBlobUrl = url;
+
+            return url;
+        } catch (e) {
+            console.error("Error processing frame:", e);
+            return "";
+        }
     }
     """,
     Output(CameraInterfaceAIO.ids.htmlImg('webcam_1'), "src"),
     Input("ws1", "message")
 )
 
-# Direct callback for WebSocket message to image
 app.clientside_callback(
     """
     function(message) {
-        if (message && message.data) {
-            return message.data;
+        if (!message) return "";
+
+        // Initialize window state if not exists
+        if (!window.webcam2State) {
+            window.webcam2State = {
+                frameCount: 0,
+                prevBlobUrl: null
+            };
         }
-        return "";
+
+        try {
+            // Increment frame count
+            window.webcam2State.frameCount++;
+
+            // Create a blob from the binary message
+            const blob = new Blob([message.data], {type: 'image/jpeg'});
+
+            // Clean up previous blob URL
+            if (window.webcam2State.prevBlobUrl) {
+                URL.revokeObjectURL(window.webcam2State.prevBlobUrl);
+            }
+
+            // Create and store new blob URL
+            const url = URL.createObjectURL(blob);
+            window.webcam2State.prevBlobUrl = url;
+
+            return url;
+        } catch (e) {
+            console.error("Error processing frame:", e);
+            return "";
+        }
     }
     """,
     Output(CameraInterfaceAIO.ids.htmlImg('webcam_2'), "src"),
