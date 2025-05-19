@@ -3,19 +3,8 @@ from components.CameraInterfaceAIO import CameraInterfaceAIO
 
 from server import app
 
-# app.clientside_callback(
-#     "function(m){return m? m.data : '';}",
-#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_1'), "src"),
-#     Input(f"ws1", "message")
-# )
-# #
-# # app.clientside_callback(
-# #     "function(m){return m? m.data : '';}",
-# #     Output(CameraInterfaceAIO.ids.htmlImg('webcam_2'), "src"),
-# #     Input(f"ws2", "message")
-# # )
-
-# # Direct callback for WebSocket message to image
+# # Callback format to write data from the Websocket directly into src of Htmp.Img
+# # Bad practice - data transfer in this format eats A LOT of ram very fast
 # app.clientside_callback(
 #     """
 #     function(message) {
@@ -28,8 +17,7 @@ from server import app
 #     Output(CameraInterfaceAIO.ids.htmlImg('webcam_1'), "src"),
 #     Input("ws1", "message")
 # )
-#
-# # Direct callback for WebSocket message to image
+
 # app.clientside_callback(
 #     """
 #     function(message) {
@@ -59,7 +47,7 @@ app.clientside_callback(
         }
         
         try {
-            // Increment frame count
+            // Increment frame count - in case we want to have a periodic reconnect
             window.webcam1State.frameCount++;
 
             // Create a blob from the binary message
@@ -73,7 +61,30 @@ app.clientside_callback(
             // Create and store new blob URL
             const url = URL.createObjectURL(blob);
             window.webcam1State.prevBlobUrl = url;
+            
+            // Use this code if you want to enforce periodic reconnect
+            // Every 300 frames, force reconnection
+            if (window.webcam1State.frameCount >= 300) {
+                window.webcam1State.frameCount = 0;
 
+                /*
+                setTimeout(() => {
+                    const ws = document.getElementById("ws1");
+                    if (ws && ws._websocket) {
+                        ws._websocket.close();
+
+                        setTimeout(() => {
+                            const baseUrl = "ws://127.0.0.1:5000/stream1";
+                            const newUrl = baseUrl + "?t=" + Date.now();
+                            ws.setAttribute("url", newUrl);
+
+                            const event = new Event("dash-prop-change");
+                            ws.dispatchEvent(event);
+                        }, 200);
+                    }
+                }, 100); 
+                */
+            }
             return url;
         } catch (e) {
             console.error("Error processing frame:", e);
@@ -113,6 +124,29 @@ app.clientside_callback(
             // Create and store new blob URL
             const url = URL.createObjectURL(blob);
             window.webcam2State.prevBlobUrl = url;
+            
+            // Use this code if you want to enforce periodic reconnect
+            // Every 300 frames, force reconnection
+            if (window.webcam2State.frameCount >= 300) {
+                window.webcam2State.frameCount = 0;
+                /*
+                setTimeout(() => {
+                    const ws = document.getElementById("ws2");
+                    if (ws && ws._websocket) {
+                        ws._websocket.close();
+
+                        setTimeout(() => {
+                            const baseUrl = "ws://127.0.0.1:5000/stream2";
+                            const newUrl = baseUrl + "?t=" + Date.now();
+                            ws.setAttribute("url", newUrl);
+
+                            const event = new Event("dash-prop-change");
+                            ws.dispatchEvent(event);
+                        }, 200);
+                    }
+                }, 100);
+                */
+            }
 
             return url;
         } catch (e) {
@@ -128,146 +162,65 @@ app.clientside_callback(
 app.clientside_callback(
     """
     function(message) {
-        if (message && message.data) {
-            return message.data;
+        if (!message) return "";
+
+        // Initialize window state if not exists
+        if (!window.webcam3State) {
+            window.webcam3State = {
+                frameCount: 0,
+                prevBlobUrl: null
+            };
         }
-        return "";
+
+        try {
+            // Increment frame count
+            window.webcam3State.frameCount++;
+
+            // Create a blob from the binary message
+            const blob = new Blob([message.data], {type: 'image/jpeg'});
+
+            // Clean up previous blob URL
+            if (window.webcam3State.prevBlobUrl) {
+                URL.revokeObjectURL(window.webcam3State.prevBlobUrl);
+            }
+
+            // Create and store new blob URL
+            const url = URL.createObjectURL(blob);
+            window.webcam3State.prevBlobUrl = url;
+
+            // Use this code if you want to enforce periodic reconnect
+            // Every 300 frames, force reconnection
+            if (window.webcam3State.frameCount >= 300) {
+                window.webcam3State.frameCount = 0;
+                /*
+                setTimeout(() => {
+                    const ws = document.getElementById("ws2");
+                    if (ws && ws._websocket) {
+                        ws._websocket.close();
+
+                        setTimeout(() => {
+                            const baseUrl = "ws://127.0.0.1:5000/stream3";
+                            const newUrl = baseUrl + "?t=" + Date.now();
+                            ws.setAttribute("url", newUrl);
+
+                            const event = new Event("dash-prop-change");
+                            ws.dispatchEvent(event);
+                        }, 200);
+                    }
+                }, 100);
+                */
+            }
+
+            return url;
+        } catch (e) {
+            console.error("Error processing frame:", e);
+            return "";
+        }
     }
     """,
     Output(CameraInterfaceAIO.ids.htmlImg('webcam_3'), "src"),
     Input("ws3", "message")
 )
-# app.clientside_callback(
-#     """
-#     // Rate limiting state variables
-#     let lastProcessedTime = 0;
-#     const MIN_FRAME_INTERVAL = 50;
-#
-#     function(message) {
-#         // Skip if no message
-#         if (!message) return "";
-#
-#         const now = Date.now();
-#
-#         // Skip this frame if we're processing too fast
-#         if (now - lastProcessedTime < MIN_FRAME_INTERVAL) {
-#             // Return current src to maintain current image
-#             const img = document.getElementById('CameraInterfaceAIO.htmlImg.webcam_1');
-#             return img ? img.src : "";
-#         }
-#
-#         // Process frame and update timestamp
-#         lastProcessedTime = now;
-#
-#         // Handle binary data from WebSocket
-#         // For dash-extensions WebSocket, binary data is in message itself
-#
-#         // Create a blob from the binary message
-#         const blob = new Blob([message], {type: 'image/jpeg'});
-#
-#         // Clean up previous blob URL if it exists
-#         if (window._prevBlobUrl1) {
-#             URL.revokeObjectURL(window._prevBlobUrl1);
-#         }
-#
-#         // Create and store new blob URL
-#         const url = URL.createObjectURL(blob);
-#         window._prevBlobUrl1 = url;
-#
-#         return url;
-#     }
-#     """,
-#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_1'), "src"),
-#     Input("ws1", "message")
-# )
-#
-# app.clientside_callback(
-#     """
-#     // Rate limiting state variables
-#     let lastProcessedTime = 0;
-#     const MIN_FRAME_INTERVAL = 100;
-#
-#     function(message) {
-#         // Skip if no message
-#         if (!message) return "";
-#
-#         const now = Date.now();
-#
-#         // Skip this frame if we're processing too fast
-#         if (now - lastProcessedTime < MIN_FRAME_INTERVAL) {
-#             // Return current src to maintain current image
-#             const img = document.getElementById('CameraInterfaceAIO.htmlImg.webcam_2');
-#             return img ? img.src : "";
-#         }
-#
-#         // Process frame and update timestamp
-#         lastProcessedTime = now;
-#
-#         // Handle binary data from WebSocket
-#         // For dash-extensions WebSocket, binary data is in message itself
-#
-#         // Create a blob from the binary message
-#         const blob = new Blob([message], {type: 'image/jpeg'});
-#
-#         // Clean up previous blob URL if it exists
-#         if (window._prevBlobUrl1) {
-#             URL.revokeObjectURL(window._prevBlobUrl1);
-#         }
-#
-#         // Create and store new blob URL
-#         const url = URL.createObjectURL(blob);
-#         window._prevBlobUrl1 = url;
-#
-#         return url;
-#     }
-#     """,
-#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_2'), "src"),
-#     Input("ws2", "message")
-# )
-#
-# app.clientside_callback(
-#     """
-#     // Rate limiting state variables
-#     let lastProcessedTime = 0;
-#     const MIN_FRAME_INTERVAL = 100;
-#
-#     function(message) {
-#         // Skip if no message
-#         if (!message) return "";
-#
-#         const now = Date.now();
-#
-#         // Skip this frame if we're processing too fast
-#         if (now - lastProcessedTime < MIN_FRAME_INTERVAL) {
-#             // Return current src to maintain current image
-#             const img = document.getElementById('CameraInterfaceAIO.htmlImg.webcam_3');
-#             return img ? img.src : "";
-#         }
-#
-#         // Process frame and update timestamp
-#         lastProcessedTime = now;
-#
-#         // Handle binary data from WebSocket
-#         // For dash-extensions WebSocket, binary data is in message itself
-#
-#         // Create a blob from the binary message
-#         const blob = new Blob([message], {type: 'image/jpeg'});
-#
-#         // Clean up previous blob URL if it exists
-#         if (window._prevBlobUrl1) {
-#             URL.revokeObjectURL(window._prevBlobUrl1);
-#         }
-#
-#         // Create and store new blob URL
-#         const url = URL.createObjectURL(blob);
-#         window._prevBlobUrl1 = url;
-#
-#         return url;
-#     }
-#     """,
-#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_3'), "src"),
-#     Input("ws3", "message")
-# )
 
 # Callback to force WebSocket reconnection when Start is clicked
 app.clientside_callback(
