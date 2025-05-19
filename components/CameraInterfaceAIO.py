@@ -75,6 +75,9 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         htmlImg_props = htmlImg_props.copy() if htmlImg_props else {} # copy the dict so as to not mutate the user's dict
         if 'style' in htmlImg_props:
             htmlImg_props['style'].update(default_img_style)
+        # Set default dimensions - important for canvas elements
+        htmlImg_props['width'] = htmlImg_props.get('width', 640)
+        htmlImg_props['height'] = htmlImg_props.get('height', 480)
 
         # Define the component's layout
         # cam_name = dmc.CardSection([dmc.Text(name, size='xl')],
@@ -109,7 +112,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             camera_screen = html.Img(src=self._placeholder, id=self.ids.htmlImg(aio_id),
                                      **htmlImg_props)
         else:
-            camera_screen = html.Img(id=self.ids.htmlImg(aio_id), **htmlImg_props)
+            camera_screen = html.Canvas(id=self.ids.htmlImg(aio_id), **htmlImg_props)
         # Hidden Div to mitigate problems with callbacks without Output
         hidden_div = html.Div([], id=self.ids.hidden_div(aio_id), style={'display': 'none'})
         #%% LAYOUT DEFINITION

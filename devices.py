@@ -35,6 +35,7 @@ thorcam_2.initialize(10, 20, rotate_img=True)
 # CAMERA STREAMERS (sockets)
 time.sleep(0.1)
 streamer1 = WebcamStreamer(thorcam_1, "/stream1")
+print("AFTER CREATING STREAMER 1 OBJECT")
 streamer2 = WebcamStreamer(thorcam_2, "/stream2")
 # streamer3 = WebcamStreamer(xenics_cam, "/stream3")
 

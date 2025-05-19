@@ -63,6 +63,9 @@ def layout():
 
     relay_control_card = RelayBoardAIO(aio_id="relay_controller_interface",
                                        device=valve_control_board)
+    # Sockets for handling streams from the cameras
+    # websocket1 = WebSocket(url=f"ws://127.0.0.1:5000/stream1", id="ws1", connect=True, reconnect=True)
+    # websocket2 = WebSocket(url=f"ws://127.0.0.1:5000/stream2", id="ws2", connect=True, reconnect=True)
 
     return dmc.MantineProvider(
         [dmc.Flex(
@@ -70,15 +73,19 @@ def layout():
                 CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1, streamer=streamer1, name='Loading chamber'),
                 CameraInterfaceAIO(aio_id='webcam_2', camera=thorcam_2, streamer=streamer2,
                                    name='Science chamber outside'),
+                html.Canvas(id="test_canvas", style={'width': '200px', 'height': '400px'}),
                 # CameraInterfaceAIO(aio_id='webcam_3', camera=xenics_cam, streamer=streamer3,
                 #                    name='Science chamber inside'),
                 WebSocket(url=f"ws://127.0.0.1:5000/stream1", id="ws1"),
                 WebSocket(url=f"ws://127.0.0.1:5000/stream2", id="ws2"),
+                # websocket1,
+                # websocket2,
                 # WebSocket(url=f"ws://127.0.0.1:5000/stream3", id="ws3"),
                 # CameraInterfaceAIO(aio_id='webcam_1', placeholder=img1),
                 # CameraInterfaceAIO(aio_id='webcam_2', placeholder=img2),
                 loading_card,
-                relay_control_card
+                relay_control_card,
+                html.Div(children="", id="hidden_div_clientside", style={'display': 'none'}),
             ]),
         ])
 

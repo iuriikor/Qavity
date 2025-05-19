@@ -16,32 +16,207 @@ from server import app
 # # )
 
 # Direct callback for WebSocket message to image
+# app.clientside_callback(
+#     """
+#     function(message) {
+#         if (message && message.data) {
+#             return message.data;
+#         }
+#         return "";
+#     }
+#     """,
+#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_1'), "src"),
+#     Input("ws1", "message")
+# )
+
 app.clientside_callback(
     """
     function(message) {
-        if (message && message.data) {
-            return message.data;
+        if (!message) return "";
+
+        // Initialize window state if not exists
+        if (!window.webcam1State) {
+            window.webcam1State = {
+                frameCount: 0,
+                prevBlobUrl: null
+            };
         }
+
+        // Find webcam_1 canvas
+        const canvases = document.getElementsByTagName('canvas');
+        let canvas = null;
+        for (let i = 0; i < canvases.length; i++) {
+            if (canvases[i].id.includes('webcam_1')) {
+                canvas = canvases[i];
+                break;
+            }
+        }
+
+        if (!canvas) return "";
+
+        try {
+            // Increment frame count
+            window.webcam1State.frameCount++;
+
+            // Get canvas context
+            const ctx = canvas.getContext('2d');
+
+            // Create a blob from the binary message
+            const blob = new Blob([message.data], {type: 'image/jpeg'});
+
+            // Clean up previous blob URL
+            if (window.webcam1State.prevBlobUrl) {
+                URL.revokeObjectURL(window.webcam1State.prevBlobUrl);
+            }
+
+            // Create and store new blob URL
+            const url = URL.createObjectURL(blob);
+            window.webcam1State.prevBlobUrl = url;
+
+            // Load and draw the image
+            const img = new Image();
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                img.onload = null;
+            };
+
+            img.src = url;
+
+            // Every 300 frames, force reconnection
+            if (window.webcam1State.frameCount >= 300) {
+                window.webcam1State.frameCount = 0;
+
+                setTimeout(() => {
+                    const ws = document.getElementById("ws1");
+                    if (ws && ws._websocket) {
+                        ws._websocket.close();
+
+                        setTimeout(() => {
+                            const baseUrl = "ws://127.0.0.1:5000/stream1";
+                            const newUrl = baseUrl + "?t=" + Date.now();
+                            ws.setAttribute("url", newUrl);
+
+                            const event = new Event("dash-prop-change");
+                            ws.dispatchEvent(event);
+                        }, 200);
+                    }
+                }, 100);
+            }
+
+        } catch (e) {
+            console.error("Error processing frame:", e);
+        }
+
         return "";
     }
     """,
-    Output(CameraInterfaceAIO.ids.htmlImg('webcam_1'), "src"),
-    Input("ws1", "message")
+    Output(CameraInterfaceAIO.ids.hidden_div('webcam_1'), "children", allow_duplicate=True),
+    Input("ws1", "message"),
+    prevent_initial_call=True
 )
 
-# Direct callback for WebSocket message to image
+# # Direct callback for WebSocket message to image
+# app.clientside_callback(
+#     """
+#     function(message) {
+#         if (message && message.data) {
+#             return message.data;
+#         }
+#         return "";
+#     }
+#     """,
+#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_2'), "src"),
+#     Input("ws2", "message")
+# )
+
 app.clientside_callback(
     """
     function(message) {
-        if (message && message.data) {
-            return message.data;
+        if (!message) return "";
+
+        // Initialize window state if not exists
+        if (!window.webcam2State) {
+            window.webcam2State = {
+                frameCount: 0,
+                prevBlobUrl: null
+            };
         }
+
+        // Find webcam_2 canvas
+        const canvases = document.getElementsByTagName('canvas');
+        let canvas = null;
+        for (let i = 0; i < canvases.length; i++) {
+            if (canvases[i].id.includes('webcam_2')) {
+                canvas = canvases[i];
+                break;
+            }
+        }
+
+        if (!canvas) return "";
+
+        try {
+            // Increment frame count
+            window.webcam2State.frameCount++;
+
+            // Get canvas context
+            const ctx = canvas.getContext('2d');
+
+            // Create a blob from the binary message
+            const blob = new Blob([message.data], {type: 'image/jpeg'});
+
+            // Clean up previous blob URL
+            if (window.webcam2State.prevBlobUrl) {
+                URL.revokeObjectURL(window.webcam2State.prevBlobUrl);
+            }
+
+            // Create and store new blob URL
+            const url = URL.createObjectURL(blob);
+            window.webcam2State.prevBlobUrl = url;
+
+            // Load and draw the image
+            const img = new Image();
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                img.onload = null;
+            };
+
+            img.src = url;
+
+            // Every 300 frames, force reconnection
+            if (window.webcam2State.frameCount >= 300) {
+                window.webcam2State.frameCount = 0;
+
+                setTimeout(() => {
+                    const ws = document.getElementById("ws2");
+                    if (ws && ws._websocket) {
+                        ws._websocket.close();
+
+                        setTimeout(() => {
+                            const baseUrl = "ws://127.0.0.1:5000/stream2";
+                            const newUrl = baseUrl + "?t=" + Date.now();
+                            ws.setAttribute("url", newUrl);
+
+                            const event = new Event("dash-prop-change");
+                            ws.dispatchEvent(event);
+                        }, 200);
+                    }
+                }, 100);
+            }
+
+        } catch (e) {
+            console.error("Error processing frame:", e);
+        }
+
         return "";
     }
     """,
-    Output(CameraInterfaceAIO.ids.htmlImg('webcam_2'), "src"),
-    Input("ws2", "message")
+    Output(CameraInterfaceAIO.ids.hidden_div('webcam_2'), "children", allow_duplicate=True),
+    Input("ws2", "message"),
+    prevent_initial_call=True
 )
+
 
 app.clientside_callback(
     """
@@ -405,4 +580,31 @@ app.clientside_callback(
     Input({'type': 'y-min', 'index': MATCH}, 'value'),
     Input({'type': 'y-max', 'index': MATCH}, 'value'),
     Input({'type': 'display-samples', 'index': MATCH}, 'value')
+)
+
+
+# Webcam connection debug
+app.clientside_callback(
+    """
+    function() {
+        // Wait a moment to let things initialize
+        setTimeout(() => {
+            const ws1 = document.getElementById("ws1");
+            const ws2 = document.getElementById("ws2");
+
+            console.log("WebSocket Initialization Check:");
+            console.log("ws1:", ws1);
+            console.log("ws1._websocket:", ws1 ? ws1._websocket : "N/A");
+            console.log("ws1 ready state:", ws1 && ws1._websocket ? ws1._websocket.readyState : "N/A");
+
+            console.log("ws2:", ws2);
+            console.log("ws2._websocket:", ws2 ? ws2._websocket : "N/A");
+            console.log("ws2 ready state:", ws2 && ws2._websocket ? ws2._websocket.readyState : "N/A");
+        }, 2000); // Check after 2 seconds
+
+        return "";
+    }
+    """,
+    Output("hidden_div_clientside", "children"),
+    Input("hidden_div_clientside", "id")
 )
