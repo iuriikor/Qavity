@@ -38,11 +38,13 @@ def layout():
     detuning_field = dmc.NumberInput(value=0, label='Detuning', thousandSeparator=" ",
                                 w=150, stepHoldDelay=500, stepHoldInterval=100, suffix=' Hz',
                                 debounce=True, radius=3,
+                                persistence=1, persistence_type='local',
                                 id='detuning_ctrl')
     time_field = dmc.NumberInput(value=0, label='Time', thousandSeparator=" ",
-                                     w=150, stepHoldDelay=500, stepHoldInterval=100, suffix=' s',
-                                     debounce=True, radius=3,
-                                     id='time_ctrl')
+                                    w=150, stepHoldDelay=500, stepHoldInterval=100, suffix=' s',
+                                    debounce=True, radius=3,
+                                    persistence=1, persistence_type='local',
+                                    id='time_ctrl')
     info_field = dmc.Text(['Total distance: Not implemented yet'], id='distance-disp')
     move_particles_btn = dmc.Button('Move Particles', id='move-particles-btn', n_clicks=0)
 

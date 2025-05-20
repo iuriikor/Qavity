@@ -104,13 +104,17 @@ class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent"
                 dmc.Text(self.name, size='lg', c='blue'),
                 dmc.Switch(label="", labelPosition='top', onLabel="ON", offLabel="OFF",
                            size='lg', color="teal", style={'align-self': 'flex-end'},
+                           persistence=1, persistence_type='local',
                            id=self.ids.output_on(aio_id))
                 ], justify='space-between')
         top_row_urukul = dmc.Flex([
                 dmc.Text(self.name, size='lg', c='blue'),
-                dmc.Chip("Updated", checked=output_is_updated, id=self.ids.output_updated(aio_id)),
+                dmc.Chip("Updated", checked=output_is_updated,
+                         persistence=1, persistence_type='local',
+                         id=self.ids.output_updated(aio_id)),
                 dmc.Switch(label="", labelPosition='top', onLabel="ON", offLabel="OFF",
                            size='lg', color="teal", style={'align-self': 'flex-end'},
+                           persistence=1, persistence_type='local',
                            checked=output_is_on, id=self.ids.output_on(aio_id))
                 ], justify='space-between')
         info_row = dmc.Flex(
@@ -118,12 +122,15 @@ class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent"
                 dmc.NumberInput(value=curr_freq, label='Frequency', thousandSeparator=" ",
                                 w=150, stepHoldDelay=500, stepHoldInterval=100, suffix=' Hz',
                                 debounce=True, radius=3,
+                                persistence=1, persistence_type='local',
                                 id=self.ids.freq_ctrl(aio_id)),
                 dmc.NumberInput(value=curr_amp, label='Power', suffix=' dBm',
                                 w=100, debounce=True, radius=3, allowDecimal=True, decimalScale=2,
+                                persistence=1, persistence_type='local',
                                 id=self.ids.amp_ctrl(aio_id)),
                 dmc.NumberInput(value=curr_phase, label='Phase', suffix=u'\N{DEGREE SIGN}',
                                 w=80, debounce=True, radius=3, allowDecimal=False,
+                                persistence=1, persistence_type='local',
                                 id=self.ids.phase_ctrl(aio_id)),
                         ], justify='space-around', style={}, align='flex-end')
         if is_urukul:

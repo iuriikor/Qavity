@@ -71,8 +71,12 @@ class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
                             withBorder=True, py="xs", inheritPadding=True)
         relay_status_row = dmc.Flex(
             [
-                dmc.Chip("Pump", checked=init_pump_port_state, id=self.ids.pump_btn(aio_id)),
-                dmc.Chip("Load", checked=init_load_port_state, id=self.ids.spray_btn(aio_id)),
+                dmc.Chip("Pump", checked=init_pump_port_state,
+                         persistence=1, persistence_type='local',
+                         id=self.ids.pump_btn(aio_id)),
+                dmc.Chip("Load", checked=init_load_port_state,
+                         persistence=1, persistence_type='local',
+                         id=self.ids.spray_btn(aio_id)),
             ], align='center', justify='space-between', mt='sm')
 
         loading_settings_row = dmc.Flex([
@@ -82,6 +86,7 @@ class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
                 suffix="s",
                 value=1.0,
                 decimalScale=2,
+                persistence=1, persistence_type='local',
                 id = self.ids.pumping_time_ctrl(aio_id)
             ),
             dmc.NumberInput(
@@ -90,6 +95,7 @@ class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
                 suffix="s",
                 value=1.0,
                 decimalScale=2,
+                persistence=1, persistence_type='local',
                 id = self.ids.load_time_ctrl(aio_id)
             ),
         ], direction='column')
