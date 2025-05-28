@@ -1,0 +1,102 @@
+{
+  "global": {
+    "buffer_size": "1000",
+    "sample_rate": 50
+  },
+  "plots": [
+    {
+      "title": "Forward Monitors",
+      "channels": [
+        "cDAQ1Mod1/ai0",
+        "cDAQ1Mod1/ai1"
+      ],
+      "legend_strings": [
+        "Mon+",
+        "Mon-"
+      ],
+      "y_scale_mode": "auto",
+      "y_min": 0,
+      "y_max": 0.8,
+      "width": 600,
+      "height": 200,
+      "display_samples": "1000"
+    },
+    {
+      "title": "PDH",
+      "channels": [
+        "cDAQ1Mod1/ai2"
+      ],
+      "legend_strings": [
+        "PDH signal"
+      ],
+      "y_scale_mode": "manual",
+      "y_min": -0.3,
+      "y_max": 0.3,
+      "width": 600,
+      "height": 200,
+      "display_samples": "1000"
+    },
+    {
+      "title": "PID Out",
+      "channels": [
+        "cDAQ1Mod1/ai3",
+        "cDAQ1Mod2/ai0"
+      ],
+      "legend_strings": [
+        "Fast Out",
+        "AUX Out"
+      ],
+      "y_scale_mode": "manual",
+      "y_min": -3,
+      "y_max": 3,
+      "width": 600,
+      "height": 200,
+      "display_samples": "1000"
+    },
+    {
+      "title": "Unused",
+      "channels": [],
+      "legend_strings": [],
+      "y_scale_mode": "auto",
+      "y_min": -10,
+      "y_max": 10,
+      "width": 600,
+      "height": 200,
+      "display_samples": "1000"
+    }
+  ],
+  "picoscope_1":
+  {
+    "data_path": "C:\\Users\\CavLev\\Documents\\Data\\20250527 - picoscope_dash_test",
+    "measurement_set_name": "trial_1",
+    "sampling_frequency": "1",
+    "acquisition_time": "10",
+    "resolution": "12",
+    "channels": {
+      "A": {
+        "enabled": "True",
+        "coupling": "DC",
+        "range": "5",
+        "offset": "0"
+      },
+      "B": {
+        "enabled": "True",
+        "coupling": "DC",
+        "range": "5",
+        "offset": "0"
+      },
+      "C": {
+        "enabled": "True",
+        "coupling": "DC",
+        "range": "5",
+        "offset": "0"
+      },
+      "D": {
+        "enabled": "True",
+        "coupling": "DC",
+        "range": "5",
+        "offset": "0"
+      }
+    }
+  }
+}

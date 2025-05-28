@@ -12,6 +12,7 @@ from controllers.frequency_generators.Urukul import UrukulFrequencyGenerator
 from controllers.other.RelayBoard import RelayBoard
 from controllers.DAQ.NI_cDAQ9174 import cDAQ9174
 from controllers.streamers.DAQDataStreamer import DAQDataStreamer
+from controllers.picoscope.ps5000a_wrapper import PicoInterface
 
 def save_as_bin(data, file_path):
     """
@@ -68,3 +69,6 @@ daq_streamer = DAQDataStreamer(
     buffer_size=20000,   # 20 kS as requested
     update_rate=10       # 10 Hz as requested
 )
+
+# Picoscope
+pico = PicoInterface(name='picoscope_1')
