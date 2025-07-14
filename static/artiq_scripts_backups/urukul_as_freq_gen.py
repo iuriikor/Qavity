@@ -15,13 +15,13 @@ class AOM_ctr(EnvExperiment):
     @kernel  # This code runs on the FPGA
     def run(self):
         # Frequencies
-        freq_ch0 = 20000000.0
-        freq_ch1 = 10000000.0
+        freq_ch0 = 110000000.0
+        freq_ch1 = 110000000.0
         freq_ch2 = 300000.0
         freq_ch3 = 300000.0
         # Amplitudes
         amp_ch0 = 0.45
-        amp_ch1 = 0.44
+        amp_ch1 = 0.45
         amp_ch2 = 0.5
         amp_ch3 = 0.5
         # Attenuations

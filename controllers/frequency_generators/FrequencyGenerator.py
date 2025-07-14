@@ -13,6 +13,7 @@ from typing import Optional, Dict, List, Union, Tuple
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("FreqGenInterface")
+logger.setLevel(logging.WARNING)
 
 
 class FrequencyGenerator(abc.ABC):

@@ -5,8 +5,9 @@ import plotly.graph_objs as go
 from dash_extensions import WebSocket
 import json
 
-from devices import daq_streamer, daq_card, pico
+from devices import daq_streamer, daq_card, pico, mirny_cavity_drive
 from components.PicoscopeInterfaceAIO import PicoscopeInterfaceAIO
+from components.CavityDriveAIO import CavityDriveAIO
 from config import config  # Import the config
 
 # Register this as a Dash page
@@ -25,41 +26,39 @@ def layout():
     # Get global config
     global_config = config.get('global', {})
 
+    control_section = dmc.Flex([
+                dmc.Text("DAQ Control", size="xl"),
+                dmc.Flex([
+                    dmc.Button("Start Monitoring", id="start-daq-btn"),
+                    dmc.Button("Stop", id="stop-daq-btn", color="red"),
+                    dmc.NumberInput(
+                        id="sample-rate-input",
+                        label="Sample Rate (Hz)",
+                        value=global_config.get('sample_rate', 50),
+                        min=1,
+                        max=1000,
+                        step=1,
+                        style={"width": 150}
+                    ),
+                    dmc.Select(
+                        id="buffer-size-select",
+                        label="Buffer Size",
+                        data=[
+                            {'value': '100', 'label': '100 samples'},
+                            {'value': '500', 'label': '500 samples'},
+                            {'value': '1000', 'label': '1000 samples'},
+                            {'value': '2000', 'label': '2000 samples'}
+                        ],
+                        value=global_config.get('buffer_size', '1000'),
+                        style={"width": 150}
+                    ),
+                    # Add a Save Configuration button
+                    dmc.Button("Save Configuration", id="save-config-btn", color="blue"),
+                    html.Div(id="save-config-status"),
+                ], gap="md", direction='column', justify='flex-start', align='center')
+            ], justify='flex-start', align='center', direction='column', mr='xs')
     # Control panel
-    control_card = dmc.Card([
-        dmc.CardSection([
-            dmc.Text("DAQ Control", size="xl")
-        ], withBorder=True, py='xs', inheritPadding=True),
-
-        dmc.Flex([
-            dmc.Button("Start Monitoring", id="start-daq-btn", color="green"),
-            dmc.Button("Stop", id="stop-daq-btn", color="red"),
-            dmc.NumberInput(
-                id="sample-rate-input",
-                label="Sample Rate (Hz)",
-                value=global_config.get('sample_rate', 50),
-                min=1,
-                max=1000,
-                step=1,
-                style={"width": 150}
-            ),
-            dmc.Select(
-                id="buffer-size-select",
-                label="Buffer Size",
-                data=[
-                    {'value': '100', 'label': '100 samples'},
-                    {'value': '500', 'label': '500 samples'},
-                    {'value': '1000', 'label': '1000 samples'},
-                    {'value': '2000', 'label': '2000 samples'}
-                ],
-                value=global_config.get('buffer_size', '1000'),
-                style={"width": 150}
-            ),
-            # Add a Save Configuration button
-            dmc.Button("Save Configuration", id="save-config-btn", color="blue"),
-            html.Div(id="save-config-status")
-        ], gap="md", direction='column', mt='sm')
-    ], withBorder=True, p="md", style={"margin": "10px"})
+    DAQ_card = dmc.Card([], withBorder=True, p="sm", mr='sm', mb='sm')
 
     # Create 4 plot cards based on config
     graphs = []
@@ -173,7 +172,7 @@ def layout():
                     }
                 )
             ], mt='sm')
-        ], withBorder=True, style={"margin": "10px"})
+        ], withBorder=True, style={"margin": "1px"})
         graphs.append(graph_card)
 
     # WebSocket for data streaming
@@ -189,20 +188,29 @@ def layout():
         )
     ])
 
+    DAQ_card.children = dmc.Flex([
+        control_section,
+        dmc.Flex([graphs[0], graphs[2]], gap="xs", style={"width": "100%"}, mt='sm', direction='column'),
+        dmc.Flex([graphs[1], graphs[3]], gap="xs", style={"width": "100%"}, mt='sm', direction='column'),
+    ], direction='row')
     pico_interface = PicoscopeInterfaceAIO(aio_id='picoscope_1', name='picoscope_1', device=pico)
+    cavity_drive_interface = dmc.Flex([
+        CavityDriveAIO(aio_id='cavity_drive', name='Fiber EOM cavity drive', device=mirny_cavity_drive, ch=0)
+        ])
 
-    return dmc.MantineProvider(
+    return dmc.MantineProvider([
         dmc.Flex([
-            dmc.Flex([control_card], direction="column", align="center", style={"width": "10%"}),
-            dmc.Flex([
-                dmc.Flex([graphs[0], graphs[1]], gap="md", style={"width": "100%"}),
-                dmc.Flex([graphs[2], graphs[3]], gap="md", style={"width": "100%"}),
-            ], direction="column", gap="md"),
+            # dmc.Flex([
+            #     control_card,
+            #     dmc.Flex([graphs[0], graphs[1]], gap="xs", style={"width": "100%"}),
+            #     dmc.Flex([graphs[2], graphs[3]], gap="xs", style={"width": "100%"}),
+            # ], direction="column", gap="sm"),
+            dmc.Flex([DAQ_card, cavity_drive_interface], direction='column'),
             pico_interface,
             websocket,
             hidden_div
-        ], direction="row")
-    )
+        ], direction="row", wrap='wrap'),
+    ])
 
 
 # Server-side callbacks

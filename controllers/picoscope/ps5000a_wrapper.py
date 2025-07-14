@@ -1,9 +1,9 @@
 import numpy as np
 import os
 import time
+import json
 from datetime import datetime
 from picoscope import ps5000a
-
 
 class PicoInterface:
     """Interface class for controlling PicoScope 5444D acquisition.
@@ -35,6 +35,7 @@ class PicoInterface:
         self.acquisition_time = 0.0001  # Default acquisition time
         self.actual_acquisition_time = None  # Actual acquisition time
         self.sampling_interval = 1e-7  # Default sampling interval (1/frequency)
+        self.actual_sampling_interval = None  # Default sampling interval (1/frequency)
         self.is_open = False
 
     @staticmethod
@@ -223,11 +224,12 @@ class PicoInterface:
             print(f"Error setting resolution: {e}")
             return False
 
-    def set_sampling_frequency(self, frequency):
+    def set_sampling_frequency(self, frequency, acq_time):
         """Set sampling frequency.
 
         Args:
             frequency (float): Sampling frequency in Hz
+            acq_time (float): Acquisition time in seconds
 
         Returns:
             float: Actual sampling frequency set
@@ -236,46 +238,49 @@ class PicoInterface:
             print("PicoScope not open")
             return 0
 
-        # try:
-        self.sample_freq = frequency
-        #     result = self.ps.setSamplingFrequency(frequency, self.num_samples)
-        #     self.actual_sample_freq = result[0]
-        #     # Update number of samples based on the actual frequency
-        #     self.actual_num_samples = result[1]
-        #     # Update sampling interval and acquisition time
-        #     self.sampling_interval = 1.0 / self.actual_sample_freq
-        #     self.actual_acquisition_time = self.actual_num_samples / self.actual_sample_freq
-        #     return self.actual_sample_freq
-        # except Exception as e:
-        #     print(f"Error setting sampling frequency: {e}")
-        #     return 0
+        self.num_samples = int(frequency * acq_time)
+        self.acquisition_time = acq_time
+        try:
+            self.sample_freq = frequency
+            result = self.ps.setSamplingFrequency(self.sample_freq, self.num_samples)
+            self.actual_sample_freq = result[0]
+            # Update sampling interval and acquisition time
+            self.sampling_interval = 1.0 / self.actual_sample_freq
+            return self.actual_sample_freq
+        except Exception as e:
+            print(f"Error setting sampling frequency: {e}")
+            return 0
 
-    def set_acquisition_time(self, time_s):
-        """Set acquisition time.
+    def set_sampling_period(self, dt, acq_time):
+        """Set sampling interval.
 
         Args:
-            time_s (float): Acquisition time in seconds
+            dt (float): Sampling period in seconds
+            acq_time (float): Acquisition time in seconds
 
         Returns:
-            tuple: (actual_time, num_samples)
+            actualSampleInterval (float): The sample interval in seconds according to the timebase.
+            noSamples (int): Number of samples in the measurement duration.
         """
         if not self.is_open:
             print("PicoScope not open")
-            return (0, 0)
+            return 0
 
-        # try:
-            # Store the requested acquisition time
-        self.acquisition_time = time_s
+        # self.num_samples = int(frequency * acq_time)
+        self.acquisition_time = acq_time
+        try:
+            self.sampling_interval = dt
+            self.sample_freq = 1/dt
+            dt_set, num_samples_set, _ = self.ps.setSamplingInterval(dt, acq_time)
+            self.actual_sample_freq = 1/dt_set
+            # Update sampling interval and acquisition time
+            self.actual_sampling_interval = dt_set
+            self.num_samples = num_samples_set
+            return self.actual_sampling_interval, self.num_samples
+        except Exception as e:
+            print(f"Error setting sampling frequency: {e}")
+            return 0
 
-        #     # Calculate number of samples based on the current sampling frequency
-        #     self.num_samples = int(self.sample_freq * time_s)
-        #     # Update the sampling frequency with the new number of samples
-        #     actual_fs = self.set_sampling_frequency(self.sample_freq)
-        #     # Result will be updated by set_sampling_frequency
-        #     return (self.actual_acquisition_time, self.actual_num_samples)
-        # except Exception as e:
-        #     print(f"Error setting acquisition time: {e}")
-        #     return (0, 0)
 
     def set_trigger(self, channel='NONE', threshold=0.0, direction='Rising',
                     delay=0, auto_trigger=True, timeout_ms=1000):
@@ -329,9 +334,12 @@ class PicoInterface:
             self.acquisition_time = duration
 
         try:
-            self.num_samples = int(self.sample_freq * self.acquisition_time)
-            self.actual_sample_freq, _ = self.ps.setSamplingFrequency(self.sample_freq, self.num_samples)
-            self.sampling_interval = 1/self.actual_sample_freq
+            # self.num_samples = int(self.sample_freq * self.acquisition_time)
+            # self.actual_sample_freq, _ = self.ps.setSamplingFrequency(self.sample_freq, self.num_samples)
+            # self.sampling_interval = 1/self.actual_sample_freq
+            # For redundancy - make sure picoscope is configured before starting the stream
+            _, _ = self.set_sampling_period(self.sampling_interval, self.acquisition_time)
+            self.sample_freq = 1/self.sampling_interval
             print(f"REQUESTED: Samples {self.num_samples} Frequency {self.sample_freq}")
             print(f"ACTUAL: Samples {self.actual_num_samples} Frequency {self.actual_sample_freq}")
         except Exception as e:
@@ -359,6 +367,10 @@ class PicoInterface:
             try:
                 # Create directory if it doesn't exist
                 os.makedirs(data_dir, exist_ok=True)
+                # Attach time stamp to the file name
+                date_time = datetime.now()
+                timestamp = date_time.strftime("%Y%m%d_%H%M%S")
+                filename = "_".join([timestamp, filename])
 
                 # Create full file path for binary data
                 full_path = os.path.join(data_dir, f"{filename}.bin")
@@ -421,10 +433,9 @@ class PicoInterface:
             # Save metadata if we're saving to a file
             if saving_to_file:
                 metadata = self.generate_metadata(additional_metadata)
-                metadata_file = os.path.join(data_dir, f"{filename}_header.dat")
+                metadata_file = os.path.join(data_dir, f"{filename}_header.json")
                 with open(metadata_file, 'w') as f:
-                    for key, value in metadata.items():
-                        f.write(f"{key}:\t{value}\n")
+                    json.dump(metadata, f, indent='\t')
                 print(f"Metadata saved to {metadata_file}")
 
             # Return data buffer only if not saving to file
@@ -438,122 +449,6 @@ class PicoInterface:
                 PicoInterface._save_files[self.handle] = None
             return None
 
-    def run_block(self, data_dir=None, filename=None, pre_trigger_percent=0,
-                  segment_index=0, callback=None, callback_param=None,
-                  additional_metadata=None):
-        """Run in block mode with external trigger.
-
-        Args:
-            data_dir (str, optional): Directory to save data and metadata files
-            filename (str, optional): Base filename without extension
-            pre_trigger_percent (float): Percentage of samples before trigger (0-100)
-            segment_index (int): Memory segment to use
-            callback (function): Optional callback function for notification
-            callback_param: Additional parameter to pass to the callback
-            additional_metadata (dict, optional): Additional metadata to include
-
-        Returns:
-            dict: Dictionary containing channel data if not saving to file, otherwise None
-        """
-        if not self.is_open:
-            print("PicoScope not open")
-            return None
-
-        try:
-            self.num_samples = int(self.sample_freq * self.acquisition_time)
-            self.actual_sample_freq, _ = self.ps.setSamplingFrequency(self.sample_freq, self.num_samples)
-            self.sampling_interval = 1 / self.actual_sample_freq
-        except Exception as e:
-            print(f"Error setting acquisition time: {e}")
-
-        # Get list of enabled channels
-        enabled_channels = [ch for ch, enabled in self.channels_enabled.items() if enabled]
-
-        if not enabled_channels:
-            print("No channels enabled")
-            return None
-
-        # Determine if we're saving to a file
-        saving_to_file = data_dir is not None and filename is not None
-
-        try:
-            # Set memory segments (1 by default)
-            self.ps.memorySegments(1)
-            self.ps.setNoOfCaptures(1)
-
-            # Start block mode acquisition
-            self.ps.runBlock(pretrig=pre_trigger_percent / 100.0, segmentIndex=segment_index)
-
-            # Wait for data or use callback
-            if callback:
-                # Register the callback with the SDK
-                self.ps.setDataReadyCallback(callback, callback_param)
-            else:
-                # Wait for the device to become ready
-                self.ps.waitReady()
-
-            # Get the data
-            result = {}
-            actual_samples = 0
-            for channel in enabled_channels:
-                # Get data in volts
-                data = self.ps.getDataV(channel, self.num_samples, segmentIndex=segment_index)
-                result[channel] = data
-
-
-            # Update actual sample count based on real data received
-            if len(result) > 0:
-                # Use the actual data length, not the buffer size
-                channel = next(iter(result))
-                actual_data_length = len(result[channel])
-
-                # Update actual sample count and acquisition time
-                self.actual_num_samples = actual_data_length
-                self.actual_acquisition_time = self.actual_num_samples / self.actual_sample_freq
-
-            # Save to file if requested
-            if saving_to_file:
-                try:
-                    # Create directory if it doesn't exist
-                    os.makedirs(data_dir, exist_ok=True)
-
-                    # Create full file path for binary data
-                    data_path = os.path.join(data_dir, f"{filename}.bin")
-
-                    # Save the data
-                    with open(data_path, 'wb') as f:
-                        # Convert dictionary of channel data to array and save
-                        channels = list(result.keys())
-                        if len(channels) == 1:
-                            result[channels[0]].tofile(f)
-                        else:
-                            # Interleave channel data
-                            interleaved = np.column_stack([result[ch] for ch in channels])
-                            interleaved.tofile(f)
-
-                    # Save metadata
-                    metadata = self.generate_metadata(additional_metadata)
-                    metadata_file = os.path.join(data_dir, f"{filename}_header.dat")
-                    with open(metadata_file, 'w') as f:
-                        for key, value in metadata.items():
-                            f.write(f"{key}:\t{value}\n")
-                    print(f"Block data saved to {data_path}")
-                    print(f"Metadata saved to {metadata_file}")
-
-                    # Return None if saving to file
-                    return None
-                except Exception as e:
-                    print(f"Error saving block data to file: {e}")
-                    # If saving fails, still return the data
-                    return result
-
-            # Return data if not saving to file
-            return result
-
-        except Exception as e:
-            print(f"Error in block mode: {e}")
-            return None
-
     def generate_metadata(self, additional_metadata=None):
         """Generate metadata dictionary for the current configuration.
 
@@ -565,27 +460,27 @@ class PicoInterface:
         """
         # Get list of enabled channels
         enabled_channels = [ch for ch, enabled in self.channels_enabled.items() if enabled]
-        enabled_channels_str = ','.join(enabled_channels)
 
         # Build basic metadata
         metadata = {
             'Timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'RequestedSamplingFrequency': f"{self.sample_freq / 1e6:.6f} MHz",
-            'ActualSamplingFrequency': f"{self.actual_sample_freq / 1e6:.6f} MHz",
-            'SamplingInterval': f"{self.sampling_interval * 1e9:.6f} ns",
-            'RequestedAcquisitionTime': f"{self.acquisition_time * 1000:.6f} ms",
-            'ActualAcquisitionTime': f"{self.actual_acquisition_time * 1000:.6f} ms",
+            'RequestedSamplingFrequency, Hz': self.sample_freq,
+            'ActualSamplingFrequency, Hz': self.actual_sample_freq,
+            'SamplingInterval, s': self.actual_sampling_interval,
+            'RequestedAcquisitionTime, s': self.acquisition_time,
+            'ActualAcquisitionTime, s': self.actual_acquisition_time,
             'RequestedNumberOfSamples': self.num_samples,
             'ActualNumberOfSamples': self.actual_num_samples,
-            'Resolution': f"{self.resolution} bits",
-            'EnabledChannels': enabled_channels_str,
+            'Bit depth': self.resolution,
+            'EnabledChannels': enabled_channels,
         }
 
         # Add channel-specific metadata
         for channel in enabled_channels:
-            metadata[f'Channel{channel}Range'] = f"{self.channel_ranges[channel]} V"
-            metadata[f'Channel{channel}Coupling'] = self.channel_couplings[channel]
-            metadata[f'Channel{channel}Offset'] = f"{self.channel_offsets[channel]} V"
+            metadata[f'{channel}'] = {}
+            metadata[f'{channel}']['Range, V'] = self.channel_ranges[channel]
+            metadata[f'{channel}']['Coupling'] = self.channel_couplings[channel]
+            metadata[f'{channel}']['Offset, V'] = self.channel_offsets[channel]
 
         # Add additional metadata if provided
         if additional_metadata:
@@ -593,51 +488,171 @@ class PicoInterface:
 
         return metadata
 
-    def save_data_to_file(self, data_dir, filename, data, additional_metadata=None):
-        """Save acquired data to file with metadata.
+
+    def run_multi_block_acquisition(self, data_dir, measurement_set_name, num_chunks,
+                                    pre_trigger_percent=0, additional_metadata=None):
+        """Run multiple block acquisitions with external trigger, saving each to separate files.
+
+        This method creates a folder with the measurement set name, prepares multiple files
+        for faster data writing, and saves each triggered acquisition to a separate file.
 
         Args:
-            data_dir (str): Directory to save data and metadata files
-            filename (str): Base filename without extension
-            data (dict or numpy.ndarray): Data to save
-            additional_metadata (dict): Optional additional metadata to include
+            data_dir (str): Base directory to save data
+            measurement_set_name (str): Name of the measurement set (will be used as folder name)
+            num_chunks (int): Number of separate acquisitions/files to create
+            pre_trigger_percent (float): Percentage of samples before trigger (0-100)
+            additional_metadata (dict, optional): Additional metadata to include
 
         Returns:
             bool: Success status
         """
+        if not self.is_open:
+            print("PicoScope not open")
+            return False
+
+        # Get list of enabled channels
+        enabled_channels = [ch for ch, enabled in self.channels_enabled.items() if enabled]
+
+        if not enabled_channels:
+            print("No channels enabled")
+            return False
+
         try:
-            # Create directory if it doesn't exist
-            os.makedirs(data_dir, exist_ok=True)
+            # Attach time stamp to the file name
+            date_time = datetime.now()
+            timestamp = date_time.strftime("%Y%m%d_%H%M%S")
+            folder_name = "_".join([timestamp, measurement_set_name])
+            # Create measurement set directory
+            measurement_dir = os.path.join(data_dir, folder_name)
+            os.makedirs(measurement_dir, exist_ok=True)
+            print(f"Created measurement directory: {measurement_dir}")
 
-            # Create full paths
-            data_path = os.path.join(data_dir, f"{filename}.bin")
-            metadata_path = os.path.join(data_dir, f"{filename}_header.dat")
+            # Prepare file handles list
+            file_handles = []
+            filenames = []
 
-            # Create binary data file
-            with open(data_path, 'wb') as f:
-                if isinstance(data, dict):
-                    # Convert dictionary of channel data to array and save
-                    channels = list(data.keys())
-                    if len(channels) == 1:
-                        data[channels[0]].tofile(f)
-                    else:
-                        # Interleave channel data
-                        interleaved = np.column_stack([data[ch] for ch in channels])
-                        interleaved.tofile(f)
-                else:
-                    # Save array directly
-                    data.tofile(f)
+            # Create and open all files
+            for i in range(num_chunks):
+                filename = f"{measurement_set_name}_chunk_{i:04d}"
+                filepath = os.path.join(measurement_dir, f"{filename}.bin")
+                filenames.append(filename)
 
-            # Generate metadata
-            metadata = self.generate_metadata(additional_metadata)
+                try:
+                    file_handle = open(filepath, 'wb')
+                    file_handles.append(file_handle)
+                    print(f"Opened file: {filepath}")
+                except Exception as e:
+                    print(f"Error opening file {filepath}: {e}")
+                    # Close any already opened files
+                    for fh in file_handles:
+                        fh.close()
+                    return False
 
-            # Create header file
-            with open(metadata_path, 'w') as f:
-                for key, value in metadata.items():
-                    f.write(f"{key}:\t{value}\n")
+            # Set up acquisition parameters
+            try:
+                self.sample_freq = 1 / self.sampling_interval
+                # Set memory segments and captures
+                self.ps.memorySegments(1)
+                self.ps.setNoOfCaptures(1)
 
-            return True
+                print(f"Acquisition setup: {self.num_samples} samples at {self.actual_sample_freq / 1e6:.3f} MHz")
+
+            except Exception as e:
+                print(f"Error setting up acquisition parameters: {e}")
+                # Close all files
+                for fh in file_handles:
+                    fh.close()
+                return False
+
+            # Perform acquisitions
+            successful_acquisitions = 0
+            num_channels = len(enabled_channels)
+            # Store actual samples for each chunk to add to metadata
+            chunks_actual_samples = []
+
+            for i in range(num_chunks):
+                print(f"Waiting for trigger {i + 1}/{num_chunks}...")
+
+                try:
+                    # Start block mode acquisition
+                    self.ps.runBlock(pretrig=pre_trigger_percent / 100.0, segmentIndex=0)
+                    self.ps.waitReady(spin_delay=0)
+
+                    # Pre-allocate all arrays at once - (channels, samples)
+                    temp_arrays = np.empty((num_channels, self.num_samples), dtype=np.int16)
+                    actual_samples_list = []
+
+                    # Get data for each channel
+                    for ch_idx, channel in enumerate(enabled_channels):
+                        # Use a row from the temp array (each row IS C-contiguous)
+                        channel_buffer = temp_arrays[ch_idx]
+
+                        _, actual_num_samples, overflow = self.ps.getDataRaw(
+                            channel=channel,
+                            numSamples=self.num_samples,
+                            segmentIndex=0,
+                            data=channel_buffer
+                        )
+
+                        actual_samples_list.append(actual_num_samples)
+
+                        if overflow:
+                            print(f"Warning: Overflow detected on channel {channel}")
+
+                    # Update actual acquisition time and number of samples to not have errors in metadata generation
+                    self.actual_acquisition_time = actual_samples_list[0]/self.actual_sample_freq
+                    self.actual_num_samples = actual_samples_list[0]
+                    # Store actual samples for this chunk
+                    chunks_actual_samples.append(actual_samples_list.copy())
+
+                    try:
+                        # Save directly
+                        temp_arrays.tofile(file_handles[i])
+                        print(f"Saved acquisition {i + 1} to {filenames[i]}.bin")
+                        successful_acquisitions += 1
+
+                    except Exception as e:
+                        print(f"Error writing data for acquisition {i + 1}: {e}")
+
+                except Exception as e:
+                    print(f"Error during acquisition {i + 1}: {e}")
+                    continue
+
+            # Close all file handles
+            for fh in file_handles:
+                fh.close()
+            print("All files closed")
+
+            # Create metadata and summary files
+            try:
+                metadata = self.generate_metadata(additional_metadata)
+                metadata['MeasurementSetName'] = measurement_set_name
+                metadata['NumberOfChunks'] = num_chunks
+                metadata['SuccessfulAcquisitions'] = successful_acquisitions
+                metadata['PreTriggerPercent'] = pre_trigger_percent
+                metadata['StorageFormat'] = 'Raw_Int16_Channels_First'
+                metadata['DataType'] = 'Raw_ADC_Counts'
+                metadata['ArrayShape'] = f'(channels={num_channels}, samples={self.num_samples})'
+                metadata[
+                    'Note'] = 'Actual samples per channel/chunk in metadata. Unused samples contain undefined data.'
+
+                # Add actual samples for each chunk to metadata
+                for chunk_idx, samples_list in enumerate(chunks_actual_samples):
+                        metadata[f'{filenames[chunk_idx]}'] = samples_list
+
+                metadata_file = os.path.join(measurement_dir, f"{measurement_set_name}_metadata.json")
+                with open(metadata_file, 'w') as f:
+                    # for key, value in metadata.items():
+                    #     f.write(f"{key}:\t{value}\n")
+                    json.dump(metadata, f, indent='\t')
+                print(f"Metadata saved to {metadata_file}")
+
+            except Exception as e:
+                print(f"Error saving metadata: {e}")
+
+            print(f"Multi-block acquisition completed: {successful_acquisitions}/{num_chunks} successful")
+            return successful_acquisitions == num_chunks
 
         except Exception as e:
-            print(f"Error saving data: {e}")
+            print(f"Error in multi-block acquisition: {e}")
             return False

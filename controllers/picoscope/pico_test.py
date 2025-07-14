@@ -18,8 +18,8 @@ pico.configure_channels(channel_config)
 
 # Set acquisition parameters
 pico.set_resolution(14)
-pico.set_sampling_frequency(5e6)   # 1 MHz
-pico.set_acquisition_time(10.0)
+pico.set_sampling_frequency(5e6, 10e-03)   # 1 MHz
+# pico.set_acquisition_time(10.0)
 
 # Run streaming acquisition with direct file output
 # The data will be saved to 'data/streaming_test.bin' and metadata to 'data/streaming_test_header.dat'

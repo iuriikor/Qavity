@@ -65,7 +65,8 @@
       "display_samples": "1000"
     }
   ],
-  "picoscope_1": {
+  "picoscope_1":
+  {
     "data_path": "C:\\Users\\CavLev\\Documents\\Data\\20250527 - picoscope_dash_test",
     "measurement_set_name": "trial_1",
     "sampling_frequency": "1",
@@ -96,19 +97,6 @@
         "range": "5",
         "offset": "0"
       }
-    }
-  },
-  "Fiber EOM cavity drive": {
-    "Output frequency": 420000,
-    "Output attenuation": 28,
-    "Output on": true,
-    "TEM00 - TEM01 separation kHz": 488457,
-    "Scripts updated": true,
-    "Ramp": {
-      "Starting frequency kHz": 420000,
-      "Ending frequency kHz": 488800,
-      "Frequency step kHz": 1,
-      "Delay seconds": 0.01
     }
   }
 }

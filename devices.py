@@ -1,6 +1,8 @@
 import os
 import time
 
+from controllers.frequency_generators.Mirny import MirnyFrequencyGenerator
+
 # Import ThorCam DLLs
 os.add_dll_directory("C:\\Users\\CavLev\\Documents\\Qavity\\dll")
 from thorlabs_tsi_sdk.tl_camera import TLCameraSDK
@@ -9,6 +11,7 @@ from controllers.cameras.ThorCam import ThorCam
 from controllers.cameras.Xenics import Xenics
 from controllers.streamer import WebcamStreamer
 from controllers.frequency_generators.Urukul import UrukulFrequencyGenerator
+from controllers.frequency_generators.Mirny import MirnyFrequencyGenerator
 from controllers.other.RelayBoard import RelayBoard
 from controllers.DAQ.NI_cDAQ9174 import cDAQ9174
 from controllers.streamers.DAQDataStreamer import DAQDataStreamer
@@ -48,6 +51,13 @@ urukul_loading_conn_params = {'ip_address': '10.34.16.100'}
 urukul_loading = UrukulFrequencyGenerator(device_id='0',
                                           channel_params=urukul_loading_params,
                                           connection_params=urukul_loading_conn_params)
+
+# Only 1 channel for now
+mirny_channel_params = {0: {'frequency': 400.0e06, 'attenuation': 27, 'on': False}
+                        }
+mirny_cavity_drive = MirnyFrequencyGenerator(device_id='0',
+                                             channel_params=mirny_channel_params,
+                                             connection_params=urukul_loading_conn_params)
 
 # RELAY BOARD CONTROLLING AUTOMATIC VALVES
 valve_ports = {"Pump": 1,

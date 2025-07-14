@@ -42,6 +42,7 @@ def get_default_config():
 def save_config(config_data, config_file=CFG_PATH):
     """Save configuration to JSON file."""
     try:
+        # Plot properties
         # Fix any issues with the config data
         for i, plot in enumerate(config_data.get("plots", [])):
             if not plot.get("title"):
@@ -50,7 +51,6 @@ def save_config(config_data, config_file=CFG_PATH):
             # Ensure legend_strings exists
             if "legend_strings" not in plot:
                 plot["legend_strings"] = []
-
         # Save with pretty formatting
         with open(config_file, 'w') as f:
             json.dump(config_data, f, indent=2)
@@ -58,6 +58,43 @@ def save_config(config_data, config_file=CFG_PATH):
     except Exception as e:
         print(f"Error saving config file: {e}")
         return False
+
+
+def update_config(new_data, config_file=CFG_PATH):
+    """Update configuration by merging new data with existing config."""
+    try:
+        # print(f"Data to merge into config: \n{new_data}")
+
+        # Load existing config
+        config_old = load_config(config_file)
+        # print(f"Existing config loaded successfully")
+
+        # Create a copy of the old config and update it
+        config_new = config_old.copy()  # Make a shallow copy
+        config_new.update(new_data)  # Update with new data
+
+        # print(f"Config after merging: \n{config_new}")
+
+        # Save the updated config
+        success = save_config(config_new, config_file)
+
+        if success:
+            # print("Config updated successfully")
+            # Update the global config instance
+            global config
+            config = config_new
+
+        return success
+    except Exception as e:
+        print(f"Error updating config: {e}")
+        return False
+
+
+# def update_config(config_data, config_file=CFG_PATH):
+#     """Update configuration from JSON file."""
+#     # Save with pretty formatting
+#     with open(config_file, 'w') as f:
+#         json.dump(config_data, f, indent=2)
 
 
 # Create a config instance that can be imported by other modules
