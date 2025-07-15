@@ -541,8 +541,13 @@ for plot_idx in range(4):
                         return dash_clientside.no_update;
                     }}
                     
-                    // Apply throttling - but less aggressive (50ms instead of 100ms)
-                    if (now - plotState.lastUpdate < 50) {{
+                    // Debug: Log plot updates occasionally
+                    if (currentDataCounter % 10 === 0) {{
+                        console.log(`Plot {plot_idx}: Counter ${currentDataCounter}, last update ${now - plotState.lastUpdate}ms ago`);
+                    }}
+                    
+                    // Minimal throttling - allow updates every 10ms (100 Hz max)
+                    if (now - plotState.lastUpdate < 10) {{
                         return dash_clientside.no_update;
                     }}
                     
