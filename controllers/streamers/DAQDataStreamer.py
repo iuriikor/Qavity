@@ -104,34 +104,28 @@ class DAQDataStreamer:
                             # Get timestamp
                             current_time = time.time()
 
-                            # OPTIMIZED BINARY PROTOCOL: Minimize overhead
+                            # REVERT TO WORKING FORMAT - but keep smaller data size optimization
                             samples_per_update = getattr(self, '_samples_per_update', 200)
                             
-                            # Pre-calculate data to optimize packing
-                            channel_data_arrays = []
-                            total_samples = 0
-                            
+                            # Start with timestamp and number of channels
+                            binary_data = struct.pack('!di', current_time, len(buffer_data))
+
                             for channel_name, data in buffer_data.items():
                                 if len(data) == 0:
                                     continue
+                                    
+                                # Send only the most recent samples (not entire buffer)
                                 recent_data = data[-samples_per_update:] if len(data) > samples_per_update else data
-                                channel_data_arrays.append(recent_data)
-                                total_samples = len(recent_data)  # Should be same for all channels
-                            
-                            if not channel_data_arrays:
-                                continue
-                                
-                            # Optimized header: timestamp + num_channels + samples_per_channel  
-                            binary_data = struct.pack('!dii', current_time, len(channel_data_arrays), total_samples)
-                            
-                            # Pack all channel data in one go (interleaved for cache efficiency)
-                            all_values = []
-                            for sample_idx in range(total_samples):
-                                for channel_data in channel_data_arrays:
-                                    all_values.append(channel_data[sample_idx])
-                            
-                            # Single struct.pack call for all data
-                            binary_data += struct.pack('!' + 'd' * len(all_values), *all_values)
+
+                                # Channel name
+                                name_bytes = channel_name.encode('utf-8')
+                                binary_data += struct.pack('!i', len(name_bytes))
+                                binary_data += name_bytes
+
+                                # Data length and values
+                                binary_data += struct.pack('!i', len(recent_data))
+                                # Pack all data values at once
+                                binary_data += struct.pack('!' + 'd' * len(recent_data), *recent_data)
 
                             # Send binary data to frontend with detailed diagnostics
                             data_size_bytes = len(binary_data)
