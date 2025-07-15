@@ -475,16 +475,14 @@ for plot_idx in range(4):
                 window.plotState.plot_{plot_idx} = {{
                     lastUpdate: 0,
                     lastDataLength: 0,
-                    lastConfig: null
+                    lastConfig: null,
+                    lastDataCounter: 0
                 }};
             }}
             
-            // Throttle updates - only update every 100ms minimum
+            // Get current time and plot state
             const now = Date.now();
             const plotState = window.plotState.plot_{plot_idx};
-            if (now - plotState.lastUpdate < 100) {{
-                return dash_clientside.no_update;
-            }}
 
             try {{
                 // Get the channel data from window.daqState
@@ -519,40 +517,41 @@ for plot_idx in range(4):
                 const currentDataLength = Object.keys(data).length > 0 ? Object.values(data)[0].length : 0;
                 const configString = JSON.stringify({{channelIndices, yScaleMode, yMin, yMax, displaySamples}});
                 
+                // Use DAQ counter as a better indicator of new data
+                const currentDataCounter = window.daqState.counter || 0;
+                
                 // Check if we need a full recreation vs just data update
                 const needsFullRecreation = (
                     plotState.lastConfig !== configString ||  // Config changed
                     selectedChannels.length === 0 ||          // No channels
-                    plotState.lastDataLength === 0            // First time
+                    !plotState.lastDataCounter               // First time
                 );
                 
-                // FUTURE OPTIMIZATION: Incremental updates using Plotly.extendTraces
-                // Currently disabled because it requires direct DOM manipulation
-                // and may interfere with Dash's reactive system
-                //
-                // if (!needsFullRecreation && currentDataLength > plotState.lastDataLength) {{
-                //     // Could use Plotly.extendTraces() here for better performance
-                //     // This would only append new data points without recreating axes/legend
-                // }}
-                
-                // For now, reduce update frequency to improve performance
-                if (!needsFullRecreation && currentDataLength > plotState.lastDataLength) {{
-                    // Only update if we have significant new data (e.g., >10 new points)
-                    const newDataPoints = currentDataLength - plotState.lastDataLength;
-                    if (newDataPoints < 10) {{
+                // If configuration changed, always update
+                if (needsFullRecreation) {{
+                    plotState.lastUpdate = now;
+                    plotState.lastDataLength = currentDataLength;
+                    plotState.lastConfig = configString;
+                    plotState.lastDataCounter = currentDataCounter;
+                    // Continue to create new plot
+                }} else {{
+                    // For data-only updates, use counter to detect changes
+                    if (currentDataCounter === plotState.lastDataCounter) {{
+                        // No new data received
                         return dash_clientside.no_update;
                     }}
+                    
+                    // Apply throttling - but less aggressive (50ms instead of 100ms)
+                    if (now - plotState.lastUpdate < 50) {{
+                        return dash_clientside.no_update;
+                    }}
+                    
+                    // Update tracking state
+                    plotState.lastUpdate = now;
+                    plotState.lastDataLength = currentDataLength;
+                    plotState.lastConfig = configString;
+                    plotState.lastDataCounter = currentDataCounter;
                 }}
-                
-                // Skip updates that are too frequent and don't change data significantly
-                if (!needsFullRecreation && currentDataLength === plotState.lastDataLength) {{
-                    return dash_clientside.no_update;
-                }}
-                
-                // Update tracking state
-                plotState.lastUpdate = now;
-                plotState.lastDataLength = currentDataLength;
-                plotState.lastConfig = configString;
 
                 if (selectedChannels.length === 0) {{
                     // If no channels selected, return empty plot with configured dimensions
