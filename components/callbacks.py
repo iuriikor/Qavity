@@ -371,8 +371,36 @@ app.clientside_callback(
                             }
                         }
 
-                        // Store parsed data
-                        window.daqState.data = channelData;
+                        // Accumulate data instead of overwriting
+                        if (!window.daqState.accumulatedData) {
+                            window.daqState.accumulatedData = {};
+                            // Initialize accumulated data for each channel
+                            for (const channelName in channelData) {
+                                window.daqState.accumulatedData[channelName] = [];
+                            }
+                        }
+                        
+                        // Append new data to accumulated data
+                        const maxAccumulatedSamples = 10000; // Keep last 10k samples per channel
+                        for (const channelName in channelData) {
+                            if (!window.daqState.accumulatedData[channelName]) {
+                                window.daqState.accumulatedData[channelName] = [];
+                            }
+                            
+                            // Append new data
+                            window.daqState.accumulatedData[channelName] = 
+                                window.daqState.accumulatedData[channelName].concat(channelData[channelName]);
+                            
+                            // Trim to max length
+                            if (window.daqState.accumulatedData[channelName].length > maxAccumulatedSamples) {
+                                window.daqState.accumulatedData[channelName] = 
+                                    window.daqState.accumulatedData[channelName].slice(-maxAccumulatedSamples);
+                            }
+                        }
+                        
+                        // Store both current chunk and accumulated data
+                        window.daqState.data = window.daqState.accumulatedData;
+                        window.daqState.currentChunk = channelData;
                         window.daqState.timestamp = timestamp;
                         window.daqState.counter++;
                         
