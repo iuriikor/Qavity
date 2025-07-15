@@ -91,8 +91,8 @@ def optimize_daq_for_latency():
     """
     print("Optimizing DAQ settings for reduced latency...")
     
-    # Reduce data volume significantly and increase update rate
-    daq_streamer.set_data_reduction(max_samples=300, update_rate=25)
+    # Reduce data volume and optimize for WebSocket transmission bottleneck
+    daq_streamer.set_data_reduction(max_samples=300, update_rate=15)
     
     print("DAQ optimization complete. Monitor console for timing statistics.")
 

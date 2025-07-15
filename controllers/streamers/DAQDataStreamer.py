@@ -107,12 +107,16 @@ class DAQDataStreamer:
                             # Start with timestamp and number of channels
                             binary_data = struct.pack('!di', current_time, len(buffer_data))
 
-                            # Add each channel's data - limit to reduce latency
-                            max_samples_per_channel = getattr(self, '_max_samples_per_channel', 2000)
+                            # EXPERIMENT: Send only recent data points instead of full buffer
+                            # This reduces data size and should improve WebSocket performance
+                            samples_per_update = getattr(self, '_samples_per_update', 200)  # Default 200 new samples per update
                             
                             for channel_name, data in buffer_data.items():
-                                # Limit to last N samples to reduce data size and latency
-                                limited_data = data[-max_samples_per_channel:] if len(data) > max_samples_per_channel else data
+                                if len(data) == 0:
+                                    continue
+                                    
+                                # Send only the most recent samples (not entire buffer)
+                                recent_data = data[-samples_per_update:] if len(data) > samples_per_update else data
 
                                 # Channel name
                                 name_bytes = channel_name.encode('utf-8')
@@ -120,9 +124,9 @@ class DAQDataStreamer:
                                 binary_data += name_bytes
 
                                 # Data length and values
-                                binary_data += struct.pack('!i', len(limited_data))
+                                binary_data += struct.pack('!i', len(recent_data))
                                 # Pack all data values at once
-                                binary_data += struct.pack('!' + 'd' * len(limited_data), *limited_data)
+                                binary_data += struct.pack('!' + 'd' * len(recent_data), *recent_data)
 
                             # Send binary data to frontend
                             send_start = time.time()
@@ -130,7 +134,8 @@ class DAQDataStreamer:
                             send_time = time.time() - send_start
                             
                             if send_time > 0.01:  # Log if send takes >10ms
-                                self._logger.warning(f"WebSocket send took {send_time*1000:.2f}ms (data size: {len(binary_data)/1024:.1f}KB)")
+                                throughput = (len(binary_data) / 1024) / send_time  # KB/s
+                                self._logger.warning(f"WebSocket send took {send_time*1000:.2f}ms (data size: {len(binary_data)/1024:.1f}KB, throughput: {throughput:.1f}KB/s)")
                             
                             # Track transmission timing and data size
                             transmission_time = time.time() - start_time
@@ -228,12 +233,14 @@ class DAQDataStreamer:
         Adjust data reduction settings to reduce latency
         
         Args:
-            max_samples: Maximum samples per channel to send to frontend
+            max_samples: Maximum samples per channel to send to frontend (legacy parameter)
             update_rate: Update rate in Hz
         """
         self._update_rate = update_rate
         self._max_samples_per_channel = max_samples
-        self._logger.info(f"Data reduction settings: max_samples={max_samples}, update_rate={update_rate}Hz")
+        # New approach: send only recent samples per update instead of entire buffer
+        self._samples_per_update = min(200, max_samples // 10)  # Send ~10% of buffer or 200 samples max
+        self._logger.info(f"Data reduction settings: samples_per_update={self._samples_per_update}, update_rate={update_rate}Hz")
     
     def get_timing_stats(self):
         """Get current timing statistics"""
