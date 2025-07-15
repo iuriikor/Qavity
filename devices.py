@@ -80,5 +80,35 @@ daq_streamer = DAQDataStreamer(
     update_rate=10       # 10 Hz as requested
 )
 
-# Picoscope
+# Picoscope  
 pico = PicoInterface(name='picoscope_1')
+
+# DAQ optimization functions
+def optimize_daq_for_latency():
+    """
+    Optimize DAQ settings to reduce latency at the cost of some data volume.
+    This reduces the number of samples sent to the frontend and increases update rate.
+    """
+    print("Optimizing DAQ settings for reduced latency...")
+    
+    # Reduce data volume and increase update rate
+    daq_streamer.set_data_reduction(max_samples=1000, update_rate=20)
+    
+    print("DAQ optimization complete. Monitor console for timing statistics.")
+
+def get_daq_diagnostics():
+    """
+    Get current DAQ performance diagnostics
+    """
+    stats = daq_streamer.get_timing_stats()
+    if stats:
+        print("=== DAQ Performance Diagnostics ===")
+        print(f"Average acquisition time: {stats['avg_acquisition_time_ms']:.2f}ms")
+        print(f"Average transmission time: {stats['avg_transmission_time_ms']:.2f}ms")
+        print(f"Average data size: {stats['avg_data_size_kb']:.1f}KB")
+        print(f"Buffer length: {stats['buffer_length']} samples")
+        print(f"Sample count: {stats['sample_count']}")
+        return stats
+    else:
+        print("No DAQ timing statistics available yet.")
+        return None

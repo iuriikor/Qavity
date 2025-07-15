@@ -253,12 +253,28 @@ app.clientside_callback(
                 window.daqState = {
                     data: {},
                     counter: 0,
-                    processingBlob: false
+                    processingBlob: false,
+                    timing: {
+                        receiveTimes: [],
+                        processingTimes: [],
+                        lastReceiveTime: performance.now()
+                    }
                 };
             }
 
             // If we're a Blob, process it immediately
             if (message.data instanceof Blob) {
+                // Track receive time
+                const receiveTime = performance.now();
+                const timeSinceLastReceive = receiveTime - window.daqState.timing.lastReceiveTime;
+                window.daqState.timing.receiveTimes.push(timeSinceLastReceive);
+                window.daqState.timing.lastReceiveTime = receiveTime;
+                
+                // Keep only last 100 measurements
+                if (window.daqState.timing.receiveTimes.length > 100) {
+                    window.daqState.timing.receiveTimes = window.daqState.timing.receiveTimes.slice(-100);
+                }
+                
                 // Avoid processing multiple Blobs simultaneously
                 if (window.daqState.processingBlob) {
                     return dash_clientside.no_update;
@@ -271,6 +287,8 @@ app.clientside_callback(
 
                 reader.onload = function() {
                     try {
+                        const processingStartTime = performance.now();
+                        
                         // Now we have an ArrayBuffer
                         const buffer = reader.result;
 
@@ -353,12 +371,27 @@ app.clientside_callback(
                         window.daqState.data = channelData;
                         window.daqState.timestamp = timestamp;
                         window.daqState.counter++;
+                        
+                        // Track processing time
+                        const processingTime = performance.now() - processingStartTime;
+                        window.daqState.timing.processingTimes.push(processingTime);
+                        
+                        // Keep only last 100 measurements
+                        if (window.daqState.timing.processingTimes.length > 100) {
+                            window.daqState.timing.processingTimes = window.daqState.timing.processingTimes.slice(-100);
+                        }
 
-                        // Debug logging
-                        if (window.daqState.counter % 100 === 0) {
+                        // Debug logging with timing information
+                        if (window.daqState.counter % 50 === 0) {
                             console.log("DAQ data update #" + window.daqState.counter);
                             console.log("Channels:", Object.keys(channelData));
-
+                            
+                            // Calculate timing averages
+                            const avgReceiveInterval = window.daqState.timing.receiveTimes.reduce((a, b) => a + b, 0) / window.daqState.timing.receiveTimes.length;
+                            const avgProcessingTime = window.daqState.timing.processingTimes.reduce((a, b) => a + b, 0) / window.daqState.timing.processingTimes.length;
+                            
+                            console.log(`Timing: Receive interval: ${avgReceiveInterval.toFixed(2)}ms, Processing: ${avgProcessingTime.toFixed(2)}ms`);
+                            
                             // Check memory usage to help diagnose memory leaks
                             if (window.performance && window.performance.memory) {
                                 const memory = window.performance.memory;
