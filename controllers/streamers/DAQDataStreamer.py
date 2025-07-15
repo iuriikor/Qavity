@@ -91,8 +91,9 @@ class DAQDataStreamer:
                 async def update_frontend():
                     update_interval = 1.0 / self._update_rate  # Update rate
                     
-                    # Add small buffer to prevent queue buildup
+                    # Add backpressure monitoring to prevent queue buildup
                     last_send_time = time.time()
+                    consecutive_slow_sends = 0
 
                     while self._streaming:
                         try:
@@ -136,6 +137,12 @@ class DAQDataStreamer:
                             send_time = time.time() - send_start
                             
                             # Log detailed timing information
+                            # Track WebSocket performance and implement backpressure
+                            if send_time > 0.020:  # Consider >20ms as "slow"
+                                consecutive_slow_sends += 1
+                            else:
+                                consecutive_slow_sends = 0
+                            
                             if send_time > 0.005:  # Log if send takes >5ms
                                 throughput = data_size_kb / send_time  # KB/s
                                 samples_sent = sum(len(data[-getattr(self, '_samples_per_update', 200):]) for data in buffer_data.values())
@@ -167,13 +174,21 @@ class DAQDataStreamer:
                             import traceback
                             traceback.print_exc()
 
-                        # Dynamic sleep to prevent queue buildup
+                        # Dynamic sleep with backpressure to prevent queue buildup
                         actual_interval = time.time() - last_send_time
-                        if actual_interval < update_interval:
-                            sleep_time = update_interval - actual_interval
+                        
+                        # If we've had consecutive slow sends, increase interval to prevent queue buildup
+                        if consecutive_slow_sends > 3:
+                            adjusted_interval = update_interval * 1.5  # Slow down by 50%
+                            self._logger.info(f"Applying backpressure: {consecutive_slow_sends} slow sends, increasing interval to {adjusted_interval*1000:.1f}ms")
+                        else:
+                            adjusted_interval = update_interval
+                        
+                        if actual_interval < adjusted_interval:
+                            sleep_time = adjusted_interval - actual_interval
                             await asyncio.sleep(sleep_time)
                         else:
-                            # If we're behind, yield control briefly
+                            # If we're behind, yield control briefly but don't skip
                             await asyncio.sleep(0.001)
                         
                         last_send_time = time.time()
