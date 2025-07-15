@@ -94,50 +94,51 @@ app.clientside_callback(
     Input("ws2", "message")
 )
 
-app.clientside_callback(
-    """
-    function(message) {
-        if (!message) return "";
-
-        // Initialize window state if not exists
-        if (!window.webcam3State) {
-            window.webcam3State = {
-                frameCount: 0,
-                prevBlobUrl: null
-            };
-        }
-
-        try {
-            // Increment frame count
-            window.webcam3State.frameCount++;
-
-            // Create a blob from the binary message
-            const blob = new Blob([message.data], {type: 'image/jpeg'});
-
-            // Clean up previous blob URL
-            if (window.webcam3State.prevBlobUrl) {
-                URL.revokeObjectURL(window.webcam3State.prevBlobUrl);
-            }
-
-            // Create and store new blob URL
-            const url = URL.createObjectURL(blob);
-            window.webcam3State.prevBlobUrl = url;
-
-            // Every 300 frames, force reconnection
-            if (window.webcam3State.frameCount >= 300) {
-                window.webcam3State.frameCount = 0;
-            }
-
-            return url;
-        } catch (e) {
-            console.error("Error processing frame:", e);
-            return "";
-        }
-    }
-    """,
-    Output(CameraInterfaceAIO.ids.htmlImg('webcam_3'), "src"),
-    Input("ws3", "message")
-)
+# Commented out because webcam_3 is not active in the layout
+# app.clientside_callback(
+#     """
+#     function(message) {
+#         if (!message) return "";
+# 
+#         // Initialize window state if not exists
+#         if (!window.webcam3State) {
+#             window.webcam3State = {
+#                 frameCount: 0,
+#                 prevBlobUrl: null
+#             };
+#         }
+# 
+#         try {
+#             // Increment frame count
+#             window.webcam3State.frameCount++;
+# 
+#             // Create a blob from the binary message
+#             const blob = new Blob([message.data], {type: 'image/jpeg'});
+# 
+#             // Clean up previous blob URL
+#             if (window.webcam3State.prevBlobUrl) {
+#                 URL.revokeObjectURL(window.webcam3State.prevBlobUrl);
+#             }
+# 
+#             // Create and store new blob URL
+#             const url = URL.createObjectURL(blob);
+#             window.webcam3State.prevBlobUrl = url;
+# 
+#             // Every 300 frames, force reconnection
+#             if (window.webcam3State.frameCount >= 300) {
+#                 window.webcam3State.frameCount = 0;
+#             }
+# 
+#             return url;
+#         } catch (e) {
+#             console.error("Error processing frame:", e);
+#             return "";
+#         }
+#     }
+#     """,
+#     Output(CameraInterfaceAIO.ids.htmlImg('webcam_3'), "src"),
+#     Input("ws3", "message")
+# )
 
 # Callback to force WebSocket reconnection when Start is clicked
 app.clientside_callback(
@@ -198,34 +199,35 @@ app.clientside_callback(
     prevent_initial_call=True
 )
 
+# Commented out because webcam_3 is not active in the layout
 # Callback to force WebSocket reconnection when Start is clicked
-app.clientside_callback(
-    """
-    function(n_clicks) {
-        if (n_clicks > 0) {
-            // Force WebSocket reconnection
-            const ws = document.getElementById("ws3");
-            if (ws && ws._websocket) {
-                ws._websocket.close();
-                // Create a new URL with timestamp to force reconnection
-                const baseUrl = "ws://127.0.0.1:5000/stream3";
-                const newUrl = baseUrl + "?t=" + new Date().getTime();
-
-                // Update the URL attribute which Dash uses to create the WebSocket
-                ws.setAttribute("url", newUrl);
-
-                // Trigger Dash's prop change detection
-                const event = new Event("dash-prop-change");
-                ws.dispatchEvent(event);
-            }
-        }
-        return "";
-    }
-    """,
-    Output(CameraInterfaceAIO.ids.hidden_div('webcam_3'), 'children', allow_duplicate=True),
-    Input(CameraInterfaceAIO.ids.start_stream_btn('webcam_3'), 'n_clicks'),
-    prevent_initial_call=True
-)
+# app.clientside_callback(
+#     """
+#     function(n_clicks) {
+#         if (n_clicks > 0) {
+#             // Force WebSocket reconnection
+#             const ws = document.getElementById("ws3");
+#             if (ws && ws._websocket) {
+#                 ws._websocket.close();
+#                 // Create a new URL with timestamp to force reconnection
+#                 const baseUrl = "ws://127.0.0.1:5000/stream3";
+#                 const newUrl = baseUrl + "?t=" + new Date().getTime();
+# 
+#                 // Update the URL attribute which Dash uses to create the WebSocket
+#                 ws.setAttribute("url", newUrl);
+# 
+#                 // Trigger Dash's prop change detection
+#                 const event = new Event("dash-prop-change");
+#                 ws.dispatchEvent(event);
+#             }
+#         }
+#         return "";
+#     }
+#     """,
+#     Output(CameraInterfaceAIO.ids.hidden_div('webcam_3'), 'children', allow_duplicate=True),
+#     Input(CameraInterfaceAIO.ids.start_stream_btn('webcam_3'), 'n_clicks'),
+#     prevent_initial_call=True
+# )
 
 # Theme switch
 app.clientside_callback(
