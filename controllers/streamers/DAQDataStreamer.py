@@ -128,14 +128,19 @@ class DAQDataStreamer:
                                 # Pack all data values at once
                                 binary_data += struct.pack('!' + 'd' * len(recent_data), *recent_data)
 
-                            # Send binary data to frontend
+                            # Send binary data to frontend with detailed diagnostics
+                            data_size_bytes = len(binary_data)
+                            data_size_kb = data_size_bytes / 1024
+                            
                             send_start = time.time()
                             await websocket.send(binary_data)
                             send_time = time.time() - send_start
                             
-                            if send_time > 0.01:  # Log if send takes >10ms
-                                throughput = (len(binary_data) / 1024) / send_time  # KB/s
-                                self._logger.warning(f"WebSocket send took {send_time*1000:.2f}ms (data size: {len(binary_data)/1024:.1f}KB, throughput: {throughput:.1f}KB/s)")
+                            # Log detailed timing information
+                            if send_time > 0.005:  # Log if send takes >5ms
+                                throughput = data_size_kb / send_time  # KB/s
+                                samples_sent = sum(len(data[-getattr(self, '_samples_per_update', 200):]) for data in buffer_data.values())
+                                self._logger.warning(f"WebSocket send: {send_time*1000:.2f}ms, {data_size_kb:.1f}KB, {samples_sent} samples, {throughput:.1f}KB/s")
                             
                             # Track transmission timing and data size
                             transmission_time = time.time() - start_time
