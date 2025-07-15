@@ -463,7 +463,26 @@ for plot_idx in range(4):
         function(dataSignal, channelIndices, yScaleMode, yMin, yMax, displaySamples, plotConfigStore) {{
             // Do not try to get data on window loading
             if (!dataSignal || !window.daqState || !window.daqState.data) {{
-                console.log(`Plot {plot_idx} early return - no data yet`);
+                // console.log(`Plot {plot_idx} early return - no data yet`);
+                return dash_clientside.no_update;
+            }}
+            
+            // Initialize plot state tracking
+            if (!window.plotState) {{
+                window.plotState = {{}};
+            }}
+            if (!window.plotState.plot_{plot_idx}) {{
+                window.plotState.plot_{plot_idx} = {{
+                    lastUpdate: 0,
+                    lastDataLength: 0,
+                    lastConfig: null
+                }};
+            }}
+            
+            // Throttle updates - only update every 100ms minimum
+            const now = Date.now();
+            const plotState = window.plotState.plot_{plot_idx};
+            if (now - plotState.lastUpdate < 100) {{
                 return dash_clientside.no_update;
             }}
 
@@ -479,9 +498,9 @@ for plot_idx in range(4):
                     plotConfigStore.plots[{plot_idx}]) {{
 
                     plotConfig = plotConfigStore.plots[{plot_idx}];
-                    console.log(`Plot {plot_idx} config loaded:`, plotConfig);
+                    // console.log(`Plot {plot_idx} config loaded:`, plotConfig);
                 }} else {{
-                    console.log(`Plot {plot_idx} no config found, using defaults`);
+                    // console.log(`Plot {plot_idx} no config found, using defaults`);
                 }}
 
                 // Extract configuration values with defaults
@@ -495,6 +514,45 @@ for plot_idx in range(4):
 
                 // Get the selected channels
                 const selectedChannels = channelIndices || [];
+                
+                // Check if data has actually changed
+                const currentDataLength = Object.keys(data).length > 0 ? Object.values(data)[0].length : 0;
+                const configString = JSON.stringify({{channelIndices, yScaleMode, yMin, yMax, displaySamples}});
+                
+                // Check if we need a full recreation vs just data update
+                const needsFullRecreation = (
+                    plotState.lastConfig !== configString ||  // Config changed
+                    selectedChannels.length === 0 ||          // No channels
+                    plotState.lastDataLength === 0            // First time
+                );
+                
+                // FUTURE OPTIMIZATION: Incremental updates using Plotly.extendTraces
+                // Currently disabled because it requires direct DOM manipulation
+                // and may interfere with Dash's reactive system
+                //
+                // if (!needsFullRecreation && currentDataLength > plotState.lastDataLength) {{
+                //     // Could use Plotly.extendTraces() here for better performance
+                //     // This would only append new data points without recreating axes/legend
+                // }}
+                
+                // For now, reduce update frequency to improve performance
+                if (!needsFullRecreation && currentDataLength > plotState.lastDataLength) {{
+                    // Only update if we have significant new data (e.g., >10 new points)
+                    const newDataPoints = currentDataLength - plotState.lastDataLength;
+                    if (newDataPoints < 10) {{
+                        return dash_clientside.no_update;
+                    }}
+                }}
+                
+                // Skip updates that are too frequent and don't change data significantly
+                if (!needsFullRecreation && currentDataLength === plotState.lastDataLength) {{
+                    return dash_clientside.no_update;
+                }}
+                
+                // Update tracking state
+                plotState.lastUpdate = now;
+                plotState.lastDataLength = currentDataLength;
+                plotState.lastConfig = configString;
 
                 if (selectedChannels.length === 0) {{
                     // If no channels selected, return empty plot with configured dimensions
@@ -546,7 +604,7 @@ for plot_idx in range(4):
                         let displayName = channel;
                         if (Array.isArray(legendStrings) && i < legendStrings.length && legendStrings[i]) {{
                             displayName = legendStrings[i];
-                            console.log(`Plot {plot_idx} using custom legend: "${{displayName}}" for channel: ${{channel}}`);
+                            // console.log(`Plot {plot_idx} using custom legend: "${{displayName}}" for channel: ${{channel}}`);
                         }}
 
                         traces.push({{
@@ -557,7 +615,7 @@ for plot_idx in range(4):
                             line: {{color: colors[i % colors.length], width: 2}}
                         }});
                     }} else {{
-                        console.log(`Plot {plot_idx} Channel ${{channel}} not found or empty in data`);
+                        // console.log(`Plot {plot_idx} Channel ${{channel}} not found or empty in data`);
                     }}
                 }});
 
