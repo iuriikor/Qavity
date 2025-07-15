@@ -421,6 +421,13 @@ app.clientside_callback(
                         const hiddenDiv = document.getElementById("hidden-daq-data");
                         if (hiddenDiv) {
                             hiddenDiv.textContent = window.daqState.counter.toString();
+                            if (window.daqState.counter % 10 === 0) {
+                                console.log(`Hidden div updated: counter ${window.daqState.counter}`);
+                            }
+                        } else {
+                            if (window.daqState.counter % 50 === 0) {
+                                console.error("Hidden div 'hidden-daq-data' not found!");
+                            }
                         }
 
                         // We're done processing this Blob
