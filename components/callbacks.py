@@ -543,7 +543,7 @@ for plot_idx in range(4):
                     
                     // Debug: Log plot updates occasionally
                     if (currentDataCounter % 10 === 0) {{
-                        console.log(`Plot {plot_idx}: Counter ${currentDataCounter}, last update ${now - plotState.lastUpdate}ms ago`);
+                        console.log(`Plot {plot_idx}: Counter ${{currentDataCounter}}, last update ${{now - plotState.lastUpdate}}ms ago`);
                     }}
                     
                     // Minimal throttling - allow updates every 10ms (100 Hz max)
