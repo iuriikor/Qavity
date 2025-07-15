@@ -309,6 +309,10 @@ app.clientside_callback(
                         // Read number of channels (4 bytes int)
                         const numChannels = view.getInt32(offset, false);
                         offset += 4;
+                        
+                        // Read samples per channel (4 bytes int) - NEW OPTIMIZED FORMAT
+                        const samplesPerChannel = view.getInt32(offset, false);
+                        offset += 4;
 
                         if (window.daqState.counter < 3) {
                             console.log("From Blob - Timestamp:", timestamp, "Number of channels:", numChannels);
@@ -316,58 +320,37 @@ app.clientside_callback(
 
                         // Prepare data object
                         const channelData = {};
-
-                        // Read each channel's data
-                        for (let i = 0; i < numChannels; i++) {
-                            // Check if we're still within buffer bounds
-                            if (offset + 4 > buffer.byteLength) {
-                                console.error("Buffer overrun at channel name length");
-                                break;
-                            }
-
-                            // Read channel name length (4 bytes int)
-                            const nameLength = view.getInt32(offset, false);
-                            offset += 4;
-
-                            // Check if we have enough bytes for the name
-                            if (offset + nameLength > buffer.byteLength) {
-                                console.error("Buffer overrun at channel name");
-                                break;
-                            }
-
-                            // Read channel name as UTF-8 string
-                            const nameBytes = new Uint8Array(buffer, offset, nameLength);
-                            const channelName = new TextDecoder('utf-8').decode(nameBytes);
-                            offset += nameLength;
-
-                            // Check if we have enough bytes for the data length
-                            if (offset + 4 > buffer.byteLength) {
-                                console.error("Buffer overrun at data length");
-                                break;
-                            }
-
-                            // Read data length (4 bytes int)
-                            const dataLength = view.getInt32(offset, false);
-                            offset += 4;
-
-                            // Check if we have enough bytes for the data values
-                            if (offset + (dataLength * 8) > buffer.byteLength) {
-                                console.error(`Buffer overrun at data values for ${channelName}. Need ${dataLength * 8} bytes, have ${buffer.byteLength - offset}`);
-                                break;
-                            }
-
-                            // Read data values (array of 8-byte doubles)
-                            const values = [];
-                            for (let j = 0; j < dataLength; j++) {
-                                values.push(view.getFloat64(offset, false));
+                        
+                        // OPTIMIZED PARSING: Data is interleaved by sample, not by channel
+                        const totalValues = numChannels * samplesPerChannel;
+                        
+                        // Check if we have enough bytes for all data
+                        if (offset + (totalValues * 8) > buffer.byteLength) {
+                            console.error(`Buffer overrun: need ${totalValues * 8} bytes, have ${buffer.byteLength - offset}`);
+                            break;
+                        }
+                        
+                        // Initialize channel arrays using known channel names
+                        const channelNames = ['cDAQ1Mod1/ai0', 'cDAQ1Mod1/ai1', 'cDAQ1Mod1/ai2', 'cDAQ1Mod1/ai3',
+                                            'cDAQ1Mod2/ai0', 'cDAQ1Mod2/ai1', 'cDAQ1Mod2/ai2', 'cDAQ1Mod2/ai3'];
+                        
+                        for (let i = 0; i < numChannels && i < channelNames.length; i++) {
+                            channelData[channelNames[i]] = [];
+                        }
+                        
+                        // Read interleaved data: sample0_ch0, sample0_ch1, ..., sample1_ch0, sample1_ch1, ...
+                        for (let sample = 0; sample < samplesPerChannel; sample++) {
+                            for (let ch = 0; ch < numChannels && ch < channelNames.length; ch++) {
+                                const value = view.getFloat64(offset, false);
                                 offset += 8;
+                                channelData[channelNames[ch]].push(value);
                             }
+                        }
 
-                            // Store channel data
-                            channelData[channelName] = values;
-
-                            if (window.daqState.counter < 3 && i === 0) {
-                                console.log(`Channel: ${channelName}, Length: ${values.length}, First value: ${values[0]}`);
+                        if (window.daqState.counter < 3) {
+                            const firstChannel = Object.keys(channelData)[0];
+                            if (firstChannel && channelData[firstChannel].length > 0) {
+                                console.log(`Channel: ${firstChannel}, Length: ${channelData[firstChannel].length}, First value: ${channelData[firstChannel][0]}`);
                             }
                         }
 
