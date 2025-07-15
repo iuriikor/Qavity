@@ -65,36 +65,26 @@ valve_ports = {"Pump": 1,
 valve_control_board = RelayBoard(comport='COM6', output_ports=valve_ports)
 
 # DAQ CARDS
+daq_sampling_rate = 200
+daq_update_rate = 4
+
 daq_card = cDAQ9174()
 # Configure DAQ with actual channels
 daq_channels = ['cDAQ1Mod1/ai0', 'cDAQ1Mod1/ai1', 'cDAQ1Mod1/ai2', 'cDAQ1Mod1/ai3',
                 'cDAQ1Mod2/ai0', 'cDAQ1Mod2/ai1', 'cDAQ1Mod2/ai2', 'cDAQ1Mod2/ai3']
-daq_card.initialize(channels=daq_channels, sample_rate=1000)
+daq_card.initialize(channels=daq_channels, sample_rate=daq_sampling_rate)
 
 # Create DAQ streamer with specific parameters
 daq_streamer = DAQDataStreamer(
     daq=daq_card,
     path="/daq_stream",
-    sampling_rate=1000,  # 1 kS/s as requested
-    buffer_size=20000,   # 20 kS as requested
-    update_rate=10       # 10 Hz as requested
+    sampling_rate=daq_sampling_rate,  # 200 S/s
+    buffer_size=20000,   # 20 kS
+    update_rate=daq_update_rate     # 4 Hz
 )
-
+daq_streamer.set_data_reduction(max_samples=20000, update_rate=4)
 # Picoscope  
 pico = PicoInterface(name='picoscope_1')
-
-# DAQ optimization functions
-def optimize_daq_for_latency():
-    """
-    Optimize DAQ settings to reduce latency at the cost of some data volume.
-    This reduces the number of samples sent to the frontend and increases update rate.
-    """
-    print("Optimizing DAQ settings for reduced latency...")
-    
-    # Optimize for minimal WebSocket send time - target the 1-2ms sends we observed
-    daq_streamer.set_data_reduction(max_samples=600, update_rate=16)
-    
-    print("DAQ optimization complete. Monitor console for timing statistics.")
 
 def get_daq_diagnostics():
     """
