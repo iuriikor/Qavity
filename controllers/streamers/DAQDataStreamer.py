@@ -89,7 +89,10 @@ class DAQDataStreamer:
 
                 # Define frontend update coroutine - using binary format
                 async def update_frontend():
-                    update_interval = 1.0 / self._update_rate  # 10 Hz update rate
+                    update_interval = 1.0 / self._update_rate  # Update rate
+                    
+                    # Add small buffer to prevent queue buildup
+                    last_send_time = time.time()
 
                     while self._streaming:
                         try:
@@ -122,7 +125,12 @@ class DAQDataStreamer:
                                 binary_data += struct.pack('!' + 'd' * len(limited_data), *limited_data)
 
                             # Send binary data to frontend
+                            send_start = time.time()
                             await websocket.send(binary_data)
+                            send_time = time.time() - send_start
+                            
+                            if send_time > 0.01:  # Log if send takes >10ms
+                                self._logger.warning(f"WebSocket send took {send_time*1000:.2f}ms")
                             
                             # Track transmission timing and data size
                             transmission_time = time.time() - start_time
@@ -150,8 +158,16 @@ class DAQDataStreamer:
                             import traceback
                             traceback.print_exc()
 
-                        # Sleep to maintain update rate
-                        await asyncio.sleep(update_interval)
+                        # Dynamic sleep to prevent queue buildup
+                        actual_interval = time.time() - last_send_time
+                        if actual_interval < update_interval:
+                            sleep_time = update_interval - actual_interval
+                            await asyncio.sleep(sleep_time)
+                        else:
+                            # If we're behind, yield control briefly
+                            await asyncio.sleep(0.001)
+                        
+                        last_send_time = time.time()
 
                 # Main websocket loop - run acquisition and transmission in parallel
                 while True:
