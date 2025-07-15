@@ -130,7 +130,7 @@ class DAQDataStreamer:
                             send_time = time.time() - send_start
                             
                             if send_time > 0.01:  # Log if send takes >10ms
-                                self._logger.warning(f"WebSocket send took {send_time*1000:.2f}ms")
+                                self._logger.warning(f"WebSocket send took {send_time*1000:.2f}ms (data size: {len(binary_data)/1024:.1f}KB)")
                             
                             # Track transmission timing and data size
                             transmission_time = time.time() - start_time
