@@ -20,7 +20,8 @@ import os
 # Add parent directory to path to import from main app
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from devices import daq_card, daq_streamer
+from devices import daq_streamer
+from fake_device import FakeDAQDevice
 
 _dash_renderer._set_react_version("18.2.0")
 # Set up logging
@@ -34,12 +35,30 @@ quart_app = Quart(__name__)
 # Initialize Dash app with Flask server
 app = dash.Dash(server=dash_server, external_stylesheets=dmc.styles.ALL)
 
-# Use real DAQ card and streamer from main app
-# The daq_card and daq_streamer are already initialized in the main app's devices module
-print(f"Using real DAQ card with {len(daq_card.channels)} channels: {daq_card.channels}")
+# Create fake device with sine wave generation
+fake_device = FakeDAQDevice(num_channels=4)
+fake_device.initialize(
+    channels=["ch0_1Hz", "ch1_2Hz", "ch2_5Hz", "ch3_10Hz"],
+    sample_rate=1000
+)
+
+# Replace the real DAQ card with fake device in the streamer
+daq_streamer._daq = fake_device
+
+# Update the streamer's circular buffer to use fake device channels
+daq_streamer._buffer.clear()
+for channel in fake_device.channels:
+    daq_streamer._buffer.add_channel(channel)
+
+print(f"Using fake DAQ device with {len(fake_device.channels)} channels: {fake_device.channels}")
 print(f"DAQ streamer configured for path: {daq_streamer._path}")
 
-# Register the real DAQ streamer endpoint on our debug app's Quart instance
+# The DAQ streamer will now use the fake device but with the real streaming logic
+# We just need to update the path and re-register the endpoint
+daq_streamer._path = '/daq_debug_stream'
+
+# Register the endpoint using the existing streamer's register method
+# Since the streamer is already initialized, we need to manually register on our quart app
 @quart_app.websocket('/daq_debug_stream')
 async def daq_debug_stream():
     from quart import websocket
@@ -49,7 +68,7 @@ async def daq_debug_stream():
     acquisition_task = None
     
     try:
-        # Define the data acquisition coroutine
+        # Define the data acquisition coroutine - same as main app
         async def acquire_data():
             samples_per_read = 50  # Read 50 samples at a time for efficiency
             sleep_time = 1.0 / daq_streamer._update_rate
@@ -57,7 +76,7 @@ async def daq_debug_stream():
             while daq_streamer._streaming:
                 start_time = time.time()
                 
-                # Read data from DAQ
+                # Read data from fake DAQ device
                 current_data = numpy.zeros((len(daq_streamer._daq.channels), samples_per_read))
                 success = daq_streamer._daq.read_data(current_data, samples_per_read)
                 
@@ -69,11 +88,23 @@ async def daq_debug_stream():
                     
                     # Update the buffer
                     daq_streamer._buffer.add_data(data_dict)
+                    
+                    # Track acquisition timing
+                    acq_time = time.time() - start_time
+                    daq_streamer._timing_stats['acquisition_times'].append(acq_time)
+                    
+                    # Keep only last 100 measurements for stats
+                    if len(daq_streamer._timing_stats['acquisition_times']) > 100:
+                        daq_streamer._timing_stats['acquisition_times'] = daq_streamer._timing_stats['acquisition_times'][-100:]
+                    
+                    if daq_streamer._debug_enabled and len(daq_streamer._timing_stats['acquisition_times']) % 50 == 0:
+                        avg_acq_time = sum(daq_streamer._timing_stats['acquisition_times']) / len(daq_streamer._timing_stats['acquisition_times'])
+                        # daq_streamer._logger.info(f"Avg acquisition time: {avg_acq_time*1000:.2f}ms")
                 
                 # Sleep to maintain the sampling rate
                 await asyncio.sleep(sleep_time)
         
-        # Define frontend update coroutine - using binary format
+        # Define frontend update coroutine - using binary format (same as main app)
         async def update_frontend():
             update_interval = 1.0 / daq_streamer._update_rate  # Update rate
             
@@ -120,7 +151,7 @@ async def daq_debug_stream():
                 
                 await asyncio.sleep(update_interval)
         
-        # Main websocket loop - run acquisition and transmission in parallel
+        # Main websocket loop - run acquisition and transmission in parallel (same as main app)
         while True:
             if not daq_streamer._streaming:
                 # If streaming is off, wait and check again
@@ -217,12 +248,12 @@ app.layout = dmc.MantineProvider([
         # Status
         html.Div(id="status-display", style={"marginBottom": "10px"}),
         
-        # Plots for real DAQ channels
+        # Plots for fake DAQ channels
         dmc.SimpleGrid(
             cols=2,
             children=[
                 dmc.Card([
-                    dmc.Text(f"Channel: {daq_card.channels[i] if i < len(daq_card.channels) else 'N/A'}", fw=500, mb="sm"),
+                    dmc.Text(f"Channel: {fake_device.channels[i] if i < len(fake_device.channels) else 'N/A'}", fw=500, mb="sm"),
                     dcc.Graph(
                         id=f"graph-{i}",
                         figure={
@@ -230,13 +261,13 @@ app.layout = dmc.MantineProvider([
                             'layout': go.Layout(
                                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
                                 xaxis={'title': 'Samples'},
-                                yaxis={'title': 'Voltage (V)'},
+                                yaxis={'title': 'Amplitude'},
                                 height=300
                             )
                         },
                         config={'displayModeBar': False}
                     )
-                ], withBorder=True, p="sm") for i in range(min(4, len(daq_card.channels)))
+                ], withBorder=True, p="sm") for i in range(min(4, len(fake_device.channels)))
             ]
         ),
         
@@ -403,9 +434,9 @@ app.clientside_callback(
     prevent_initial_call=True
 )
 
-# Graph update callbacks for real DAQ channels
-for i in range(min(4, len(daq_card.channels))):
-    channel_name = daq_card.channels[i]
+# Graph update callbacks for fake DAQ channels
+for i in range(min(4, len(fake_device.channels))):
+    channel_name = fake_device.channels[i]
     
     app.clientside_callback(
         f"""
@@ -565,7 +596,7 @@ if __name__ == '__main__':
         if cherrypy.engine.state in (cherrypy.engine.states.STARTED, cherrypy.engine.states.STARTING):
             cherrypy.engine.stop()
 
-        print("Closing DAQ resources...")
-        daq_card.close()
+        print("Closing fake DAQ resources...")
+        fake_device.close()
 
         print("Servers stopped, all resources released.")
