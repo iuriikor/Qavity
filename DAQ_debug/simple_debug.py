@@ -121,8 +121,16 @@ async def daq_debug_stream():
                     # REVERT TO WORKING FORMAT - but keep smaller data size optimization
                     samples_per_update = getattr(daq_streamer, '_samples_per_update', 200)
                     
-                    # Start with timestamp and number of channels
-                    binary_data = struct.pack('!di', current_time, len(buffer_data))
+                    # Debug: Check buffer data structure
+                    if len(buffer_data) == 0:
+                        print("Warning: Empty buffer data")
+                        continue
+                    
+                    # Count channels with data first
+                    channels_with_data = sum(1 for data in buffer_data.values() if len(data) > 0)
+                    
+                    # Start with timestamp and number of channels WITH DATA
+                    binary_data = struct.pack('!di', current_time, channels_with_data)
                     
                     for channel_name, data in buffer_data.items():
                         if len(data) == 0:
@@ -140,6 +148,13 @@ async def daq_debug_stream():
                         binary_data += struct.pack('!i', len(recent_data))
                         # Pack all data values at once
                         binary_data += struct.pack('!' + 'd' * len(recent_data), *recent_data)
+                    
+                    # Debug: Log data structure occasionally
+                    if current_time % 5 < 0.1:  # Log every ~5 seconds
+                        print(f"Debug: Sending {channels_with_data} channels, buffer size: {len(binary_data)} bytes")
+                        print(f"Debug: Channel names: {list(buffer_data.keys())}")
+                        for ch, data in buffer_data.items():
+                            print(f"Debug: {ch}: {len(data)} samples")
                     
                     # Send binary data to frontend
                     await websocket.send(binary_data)
