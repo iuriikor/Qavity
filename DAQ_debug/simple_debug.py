@@ -106,7 +106,11 @@ async def daq_debug_stream():
         
         # Define frontend update coroutine - using binary format (same as main app)
         async def update_frontend():
-            update_interval = 1.0 / daq_streamer._update_rate  # Update rate
+            # Fixed update interval based on streamer's update rate
+            update_interval = 1.0 / daq_streamer._update_rate
+            
+            # Track the last position we sent to avoid echoing
+            last_sent_length = {}
             
             while daq_streamer._streaming:
                 try:
@@ -118,43 +122,68 @@ async def daq_debug_stream():
                     # Get timestamp
                     current_time = time.time()
                     
-                    # REVERT TO WORKING FORMAT - but keep smaller data size optimization
+                    # Use fixed samples per update to control data size
                     samples_per_update = getattr(daq_streamer, '_samples_per_update', 200)
                     
                     # Debug: Check buffer data structure
                     if len(buffer_data) == 0:
                         print("Warning: Empty buffer data")
+                        await asyncio.sleep(update_interval)
                         continue
                     
-                    # Count channels with data first
-                    channels_with_data = sum(1 for data in buffer_data.values() if len(data) > 0)
-                    
-                    # Start with timestamp and number of channels WITH DATA
-                    binary_data = struct.pack('!di', current_time, channels_with_data)
+                    # Count channels with data and prepare data to send
+                    channels_to_send = {}
                     
                     for channel_name, data in buffer_data.items():
                         if len(data) == 0:
                             continue
                         
-                        # Send only the most recent samples (not entire buffer)
-                        recent_data = data[-samples_per_update:] if len(data) > samples_per_update else data
+                        # Get the current buffer length
+                        current_length = len(data)
                         
+                        # Initialize tracking for this channel if needed
+                        if channel_name not in last_sent_length:
+                            last_sent_length[channel_name] = 0
+                        
+                        # Calculate how much new data we have
+                        new_data_count = current_length - last_sent_length[channel_name]
+                        
+                        if new_data_count > 0:
+                            # Send only NEW data since last update to avoid echoing
+                            # But limit to samples_per_update to prevent overwhelming frontend
+                            data_to_send = data[last_sent_length[channel_name]:]
+                            if len(data_to_send) > samples_per_update:
+                                data_to_send = data_to_send[-samples_per_update:]
+                            
+                            channels_to_send[channel_name] = data_to_send
+                            last_sent_length[channel_name] = current_length
+                    
+                    # Skip if no new data to send
+                    if len(channels_to_send) == 0:
+                        await asyncio.sleep(update_interval)
+                        continue
+                    
+                    # Start with timestamp and number of channels WITH DATA
+                    binary_data = struct.pack('!di', current_time, len(channels_to_send))
+                    
+                    for channel_name, data_to_send in channels_to_send.items():
                         # Channel name
                         name_bytes = channel_name.encode('utf-8')
                         binary_data += struct.pack('!i', len(name_bytes))
                         binary_data += name_bytes
                         
                         # Data length and values
-                        binary_data += struct.pack('!i', len(recent_data))
+                        binary_data += struct.pack('!i', len(data_to_send))
                         # Pack all data values at once
-                        binary_data += struct.pack('!' + 'd' * len(recent_data), *recent_data)
+                        binary_data += struct.pack('!' + 'd' * len(data_to_send), *data_to_send)
                     
                     # Debug: Log data structure occasionally
                     if current_time % 5 < 0.1:  # Log every ~5 seconds
-                        print(f"Debug: Sending {channels_with_data} channels, buffer size: {len(binary_data)} bytes")
-                        print(f"Debug: Channel names: {list(buffer_data.keys())}")
-                        for ch, data in buffer_data.items():
-                            print(f"Debug: {ch}: {len(data)} samples")
+                        print(f"Debug: Update rate: {daq_streamer._update_rate}Hz (interval: {update_interval*1000:.1f}ms)")
+                        print(f"Debug: Sending {len(channels_to_send)} channels, buffer size: {len(binary_data)} bytes")
+                        for ch, data in channels_to_send.items():
+                            total_buffer_size = len(buffer_data.get(ch, []))
+                            print(f"Debug: {ch}: {len(data)} new samples (total buffer: {total_buffer_size})")
                     
                     # Send binary data to frontend
                     await websocket.send(binary_data)
@@ -164,6 +193,7 @@ async def daq_debug_stream():
                     import traceback
                     traceback.print_exc()
                 
+                # Use fixed update interval based on streamer's update rate
                 await asyncio.sleep(update_interval)
         
         # Main websocket loop - run acquisition and transmission in parallel (same as main app)
@@ -322,6 +352,8 @@ def control_streaming(start_clicks, stop_clicks, update_rate):
     
     elif trigger_id == "update-rate-input":
         daq_streamer._update_rate = update_rate or 20
+        # Also update the samples_per_update to control frontend update frequency
+        daq_streamer._samples_per_update = min(200, max(50, int(1000 / (update_rate or 20))))
         return dmc.Alert(f"Update rate set to {update_rate}Hz", color="blue")
     
     return ""

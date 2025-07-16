@@ -94,6 +94,9 @@ class DAQDataStreamer:
                     # Add backpressure monitoring to prevent queue buildup
                     last_send_time = time.time()
                     consecutive_slow_sends = 0
+                    
+                    # Track the last position we sent to avoid echoing
+                    last_sent_length = {}
 
                     while self._streaming:
                         try:
@@ -108,25 +111,51 @@ class DAQDataStreamer:
                             # REVERT TO WORKING FORMAT - but keep smaller data size optimization
                             samples_per_update = getattr(self, '_samples_per_update', 200)
                             
-                            # Start with timestamp and number of channels
-                            binary_data = struct.pack('!di', current_time, len(buffer_data))
-
+                            # Count channels with data and prepare data to send
+                            channels_to_send = {}
+                            
                             for channel_name, data in buffer_data.items():
                                 if len(data) == 0:
                                     continue
+                                
+                                # Get the current buffer length
+                                current_length = len(data)
+                                
+                                # Initialize tracking for this channel if needed
+                                if channel_name not in last_sent_length:
+                                    last_sent_length[channel_name] = 0
+                                
+                                # Calculate how much new data we have
+                                new_data_count = current_length - last_sent_length[channel_name]
+                                
+                                if new_data_count > 0:
+                                    # Send only NEW data since last update to avoid echoing
+                                    # But limit to samples_per_update to prevent overwhelming frontend
+                                    data_to_send = data[last_sent_length[channel_name]:]
+                                    if len(data_to_send) > samples_per_update:
+                                        data_to_send = data_to_send[-samples_per_update:]
                                     
-                                # Send only the most recent samples (not entire buffer)
-                                recent_data = data[-samples_per_update:] if len(data) > samples_per_update else data
+                                    channels_to_send[channel_name] = data_to_send
+                                    last_sent_length[channel_name] = current_length
+                            
+                            # Skip if no new data to send
+                            if len(channels_to_send) == 0:
+                                await asyncio.sleep(update_interval)
+                                continue
+                            
+                            # Start with timestamp and number of channels WITH DATA
+                            binary_data = struct.pack('!di', current_time, len(channels_to_send))
 
+                            for channel_name, data_to_send in channels_to_send.items():
                                 # Channel name
                                 name_bytes = channel_name.encode('utf-8')
                                 binary_data += struct.pack('!i', len(name_bytes))
                                 binary_data += name_bytes
 
                                 # Data length and values
-                                binary_data += struct.pack('!i', len(recent_data))
+                                binary_data += struct.pack('!i', len(data_to_send))
                                 # Pack all data values at once
-                                binary_data += struct.pack('!' + 'd' * len(recent_data), *recent_data)
+                                binary_data += struct.pack('!' + 'd' * len(data_to_send), *data_to_send)
 
                             # Send binary data to frontend with detailed diagnostics
                             data_size_bytes = len(binary_data)
