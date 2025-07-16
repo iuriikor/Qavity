@@ -12,6 +12,8 @@ from hypercorn.config import Config
 from hypercorn.asyncio import serve as hypercorn_serve
 from flask import Flask
 from quart import Quart, websocket
+import numpy
+import struct
 
 import sys
 import os
@@ -37,9 +39,119 @@ app = dash.Dash(server=dash_server, external_stylesheets=dmc.styles.ALL)
 print(f"Using real DAQ card with {len(daq_card.channels)} channels: {daq_card.channels}")
 print(f"DAQ streamer configured for path: {daq_streamer._path}")
 
-# Update the streamer to use our debug path
-daq_streamer._path = '/daq_debug_stream'
-print(f"DAQ streamer path updated to: {daq_streamer._path}")
+# Register the real DAQ streamer endpoint on our debug app's Quart instance
+@quart_app.websocket('/daq_debug_stream')
+async def daq_debug_stream():
+    from quart import websocket
+    print(f'DAQ DEBUG WEBSOCKET CONNECTED')
+    
+    # Task for high-frequency data acquisition
+    acquisition_task = None
+    
+    try:
+        # Define the data acquisition coroutine
+        async def acquire_data():
+            samples_per_read = 50  # Read 50 samples at a time for efficiency
+            sleep_time = 1.0 / daq_streamer._update_rate
+            
+            while daq_streamer._streaming:
+                start_time = time.time()
+                
+                # Read data from DAQ
+                current_data = numpy.zeros((len(daq_streamer._daq.channels), samples_per_read))
+                success = daq_streamer._daq.read_data(current_data, samples_per_read)
+                
+                if success:
+                    # Add data to circular buffer for each channel
+                    data_dict = {}
+                    for i, channel in enumerate(daq_streamer._daq.channels):
+                        data_dict[channel] = current_data[i, :].tolist()
+                    
+                    # Update the buffer
+                    daq_streamer._buffer.add_data(data_dict)
+                
+                # Sleep to maintain the sampling rate
+                await asyncio.sleep(sleep_time)
+        
+        # Define frontend update coroutine - using binary format
+        async def update_frontend():
+            update_interval = 1.0 / daq_streamer._update_rate  # Update rate
+            
+            while daq_streamer._streaming:
+                try:
+                    start_time = time.time()
+                    
+                    # Get all data from the buffer
+                    buffer_data = daq_streamer._buffer.get_data()
+                    
+                    # Get timestamp
+                    current_time = time.time()
+                    
+                    # REVERT TO WORKING FORMAT - but keep smaller data size optimization
+                    samples_per_update = getattr(daq_streamer, '_samples_per_update', 200)
+                    
+                    # Start with timestamp and number of channels
+                    binary_data = struct.pack('!di', current_time, len(buffer_data))
+                    
+                    for channel_name, data in buffer_data.items():
+                        if len(data) == 0:
+                            continue
+                        
+                        # Send only the most recent samples (not entire buffer)
+                        recent_data = data[-samples_per_update:] if len(data) > samples_per_update else data
+                        
+                        # Channel name
+                        name_bytes = channel_name.encode('utf-8')
+                        binary_data += struct.pack('!i', len(name_bytes))
+                        binary_data += name_bytes
+                        
+                        # Data length and values
+                        binary_data += struct.pack('!i', len(recent_data))
+                        # Pack all data values at once
+                        binary_data += struct.pack('!' + 'd' * len(recent_data), *recent_data)
+                    
+                    # Send binary data to frontend
+                    await websocket.send(binary_data)
+                    
+                except Exception as e:
+                    print(f"Error in update_frontend: {e}")
+                    import traceback
+                    traceback.print_exc()
+                
+                await asyncio.sleep(update_interval)
+        
+        # Main websocket loop - run acquisition and transmission in parallel
+        while True:
+            if not daq_streamer._streaming:
+                # If streaming is off, wait and check again
+                await asyncio.sleep(0.5)
+                continue
+            
+            # Start data acquisition task if not already running
+            if acquisition_task is None or acquisition_task.done():
+                acquisition_task = asyncio.create_task(acquire_data())
+            
+            # Create transmission task for parallel execution
+            transmission_task = asyncio.create_task(update_frontend())
+            
+            # Wait for the transmission task to complete
+            await transmission_task
+    
+    except asyncio.CancelledError:
+        print(f'DAQ DEBUG WEBSOCKET DISCONNECTED')
+        if acquisition_task and not acquisition_task.done():
+            acquisition_task.cancel()
+    except Exception as e:
+        print(f'ERROR IN DAQ DEBUG STREAM: {str(e)}')
+        import traceback
+        traceback.print_exc()
+    finally:
+        print(f'DAQ DEBUG STREAM HANDLER EXITED')
+        daq_streamer.stop()  # Ensure DAQ is stopped when websocket disconnects
+        if acquisition_task and not acquisition_task.done():
+            acquisition_task.cancel()
+
+print("DAQ debug WebSocket endpoint registered at: /daq_debug_stream")
 
 # Layout
 app.layout = dmc.MantineProvider([
