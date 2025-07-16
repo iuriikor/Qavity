@@ -4,10 +4,10 @@ This is a minimal working example to reproduce and debug the DAQ data display de
 
 ## Overview
 
-The debug app simulates your DAQ setup with:
-- **Fake Device** (`fake_device.py`): Generates sine waves at different frequencies (1Hz, 2Hz, 5Hz, 10Hz)
-- **Fake Streamer** (`fake_streamer.py`): Streams data via WebSocket using the same binary protocol
-- **Debug App** (`debug_app.py`): Single-page Dash app with 4 plots displaying the data
+The debug app tests your DAQ setup with:
+- **Real NI DAQ Device** (`controllers/DAQ/NI_cDAQ9174.py`): Uses actual NI cDAQ9174 hardware
+- **Real DAQ Streamer** (`controllers/streamers/DAQDataStreamer.py`): Same streaming logic as main app
+- **Debug App** (`simple_debug.py`): Single-page Dash app with 4 plots displaying the data
 
 ## Features
 
@@ -53,7 +53,7 @@ To reproduce the delay issue:
 
 ## Key Differences from Main App
 
-- Uses fake sine wave data instead of real DAQ
+- Uses the same NI DAQ device and streamer as main app
 - Single page instead of multi-page app
 - Simplified to focus on the core delay issue
 - All components in one directory for easy debugging

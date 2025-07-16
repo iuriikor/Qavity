@@ -21,7 +21,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from devices import daq_streamer
-from fake_device import FakeDAQDevice
+from controllers.DAQ.NI_cDAQ9174 import cDAQ9174
 
 _dash_renderer._set_react_version("18.2.0")
 # Set up logging
@@ -35,25 +35,25 @@ quart_app = Quart(__name__)
 # Initialize Dash app with Flask server
 app = dash.Dash(server=dash_server, external_stylesheets=dmc.styles.ALL)
 
-# Create fake device with sine wave generation
-fake_device = FakeDAQDevice(num_channels=4)
-fake_device.initialize(
-    channels=["ch0_1Hz", "ch1_2Hz", "ch2_5Hz", "ch3_10Hz"],
-    sample_rate=1000
-)
+# Create actual NI DAQ device with same configuration as main app
+ni_daq_device = cDAQ9174()
+# Configure DAQ with actual channels - same as main app
+daq_channels = ['cDAQ1Mod1/ai0', 'cDAQ1Mod1/ai1', 'cDAQ1Mod1/ai2', 'cDAQ1Mod1/ai3',
+                'cDAQ1Mod2/ai0', 'cDAQ1Mod2/ai1', 'cDAQ1Mod2/ai2', 'cDAQ1Mod2/ai3']
+ni_daq_device.initialize(channels=daq_channels, sample_rate=1000)
 
-# Replace the real DAQ card with fake device in the streamer
-daq_streamer._daq = fake_device
+# Replace the device in the existing streamer
+daq_streamer._daq = ni_daq_device
 
-# Update the streamer's circular buffer to use fake device channels
+# Update the streamer's circular buffer to use actual DAQ channels
 daq_streamer._buffer.clear()
-for channel in fake_device.channels:
+for channel in ni_daq_device.channels:
     daq_streamer._buffer.add_channel(channel)
 
-print(f"Using fake DAQ device with {len(fake_device.channels)} channels: {fake_device.channels}")
+print(f"Using NI DAQ device with {len(ni_daq_device.channels)} channels: {ni_daq_device.channels}")
 print(f"DAQ streamer configured for path: {daq_streamer._path}")
 
-# The DAQ streamer will now use the fake device but with the real streaming logic
+# The DAQ streamer will now use the actual NI DAQ device with the same streaming logic
 # We just need to update the path and re-register the endpoint
 daq_streamer._path = '/daq_debug_stream'
 
@@ -293,12 +293,12 @@ app.layout = dmc.MantineProvider([
         # Status
         html.Div(id="status-display", style={"marginBottom": "10px"}),
         
-        # Plots for fake DAQ channels
+        # Plots for NI DAQ channels
         dmc.SimpleGrid(
             cols=2,
             children=[
                 dmc.Card([
-                    dmc.Text(f"Channel: {fake_device.channels[i] if i < len(fake_device.channels) else 'N/A'}", fw=500, mb="sm"),
+                    dmc.Text(f"Channel: {ni_daq_device.channels[i] if i < len(ni_daq_device.channels) else 'N/A'}", fw=500, mb="sm"),
                     dcc.Graph(
                         id=f"graph-{i}",
                         figure={
@@ -306,13 +306,13 @@ app.layout = dmc.MantineProvider([
                             'layout': go.Layout(
                                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
                                 xaxis={'title': 'Samples'},
-                                yaxis={'title': 'Amplitude'},
+                                yaxis={'title': 'Voltage (V)'},
                                 height=300
                             )
                         },
                         config={'displayModeBar': False}
                     )
-                ], withBorder=True, p="sm") for i in range(min(4, len(fake_device.channels)))
+                ], withBorder=True, p="sm") for i in range(min(4, len(ni_daq_device.channels)))
             ]
         ),
         
@@ -481,9 +481,9 @@ app.clientside_callback(
     prevent_initial_call=True
 )
 
-# Graph update callbacks for fake DAQ channels
-for i in range(min(4, len(fake_device.channels))):
-    channel_name = fake_device.channels[i]
+# Graph update callbacks for NI DAQ channels
+for i in range(min(4, len(ni_daq_device.channels))):
+    channel_name = ni_daq_device.channels[i]
     
     app.clientside_callback(
         f"""
@@ -643,7 +643,7 @@ if __name__ == '__main__':
         if cherrypy.engine.state in (cherrypy.engine.states.STARTED, cherrypy.engine.states.STARTING):
             cherrypy.engine.stop()
 
-        print("Closing fake DAQ resources...")
-        fake_device.close()
+        print("Closing NI DAQ resources...")
+        ni_daq_device.close()
 
         print("Servers stopped, all resources released.")
