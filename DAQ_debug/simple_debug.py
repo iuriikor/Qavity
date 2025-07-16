@@ -185,6 +185,35 @@ app.layout = dmc.MantineProvider([
             ),
         ], mb="md"),
         
+        # Y-axis controls
+        dmc.Group([
+            dmc.Text("Y-Axis Scale", fw="bold"),
+            dmc.RadioGroup(
+                id="y-scale-mode",
+                value="auto",
+                children=[
+                    dmc.Radio(value="auto", label="Auto"),
+                    dmc.Radio(value="manual", label="Manual")
+                ],
+            ),
+            dmc.NumberInput(
+                id="y-min",
+                label="Min",
+                value=-10,
+                style={"width": 100},
+                step=0.1,
+                disabled=True
+            ),
+            dmc.NumberInput(
+                id="y-max",
+                label="Max",
+                value=10,
+                style={"width": 100},
+                step=0.1,
+                disabled=True
+            ),
+        ], mb="md"),
+        
         # Status
         html.Div(id="status-display", style={"marginBottom": "10px"}),
         
@@ -250,6 +279,16 @@ def control_streaming(start_clicks, stop_clicks, update_rate):
         return dmc.Alert(f"Update rate set to {update_rate}Hz", color="blue")
     
     return ""
+
+# Enable/disable manual Y-axis scale inputs
+@callback(
+    [Output("y-min", "disabled"),
+     Output("y-max", "disabled")],
+    Input("y-scale-mode", "value")
+)
+def toggle_y_scale_inputs(scale_mode):
+    """Enable or disable Y-axis min/max inputs based on scale mode"""
+    return scale_mode != "manual", scale_mode != "manual"
 
 # WebSocket data handler
 app.clientside_callback(
@@ -370,7 +409,7 @@ for i in range(min(4, len(daq_card.channels))):
     
     app.clientside_callback(
         f"""
-        function(dataSignal, displaySamples) {{
+        function(dataSignal, displaySamples, yScaleMode, yMin, yMax) {{
             if (!dataSignal || !window.debugDaqState || !window.debugDaqState.data) {{
                 return dash_clientside.no_update;
             }}
@@ -385,7 +424,7 @@ for i in range(min(4, len(daq_card.channels))):
                     'layout': {{
                         margin: {{l: 40, b: 40, t: 10, r: 10}},
                         xaxis: {{title: 'Samples', range: [0, displaySize]}},
-                        yaxis: {{title: 'Voltage (V)', range: [-10, 10]}},
+                        yaxis: {{title: 'Voltage (V)'}},
                         height: 300
                     }}
                 }};
@@ -397,6 +436,35 @@ for i in range(min(4, len(daq_card.channels))):
             
             const xData = Array.from({{length: displayData.length}}, (_, i) => i);
             
+            // Calculate Y-axis range
+            let yAxisRange;
+            if (yScaleMode === 'manual') {{
+                const yMinValue = parseFloat(yMin);
+                const yMaxValue = parseFloat(yMax);
+                
+                if (!isNaN(yMinValue) && !isNaN(yMaxValue) && yMaxValue > yMinValue) {{
+                    yAxisRange = [yMinValue, yMaxValue];
+                }} else {{
+                    // Fallback to auto if manual values are invalid
+                    const dataMin = Math.min(...displayData);
+                    const dataMax = Math.max(...displayData);
+                    const range = dataMax - dataMin;
+                    const margin = Math.max(range * 0.1, 0.01);
+                    yAxisRange = [dataMin - margin, dataMax + margin];
+                }}
+            }} else {{
+                // Auto scale
+                if (displayData.length > 0) {{
+                    const dataMin = Math.min(...displayData);
+                    const dataMax = Math.max(...displayData);
+                    const range = dataMax - dataMin;
+                    const margin = Math.max(range * 0.1, 0.01);
+                    yAxisRange = [dataMin - margin, dataMax + margin];
+                }} else {{
+                    yAxisRange = [-1, 1];
+                }}
+            }}
+            
             return {{
                 'data': [{{
                     x: xData,
@@ -407,7 +475,7 @@ for i in range(min(4, len(daq_card.channels))):
                 'layout': {{
                     margin: {{l: 40, b: 40, t: 10, r: 10}},
                     xaxis: {{title: 'Samples', range: [0, displaySize]}},
-                    yaxis: {{title: 'Voltage (V)', range: [-10, 10]}},
+                    yaxis: {{title: 'Voltage (V)', range: yAxisRange}},
                     height: 300,
                     plot_bgcolor: 'rgba(0,0,0,0)',
                     paper_bgcolor: 'rgba(0,0,0,0)'
@@ -418,6 +486,9 @@ for i in range(min(4, len(daq_card.channels))):
         Output(f"graph-{i}", "figure"),
         Input("hidden-data-trigger", "children"),
         Input("display-samples-select", "value"),
+        Input("y-scale-mode", "value"),
+        Input("y-min", "value"),
+        Input("y-max", "value"),
         prevent_initial_call=True
     )
 
