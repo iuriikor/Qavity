@@ -435,23 +435,12 @@ app.clientside_callback(
                                     console.warn("Error calculating timing averages:", timingError);
                                 }
                             }
-                            
-                            // Check memory usage to help diagnose memory leaks
-                            if (window.performance && window.performance.memory) {
-                                const memory = window.performance.memory;
-                                console.log(`Memory: Used heap: ${(memory.usedJSHeapSize / (1024 * 1024)).toFixed(2)} MB, ` + 
-                                          `Total heap: ${(memory.totalJSHeapSize / (1024 * 1024)).toFixed(2)} MB, ` +
-                                          `Heap limit: ${(memory.jsHeapSizeLimit / (1024 * 1024)).toFixed(2)} MB`);
-                            }
                         }
 
                         // Find and update the hidden div to trigger the graph update
                         const hiddenDiv = document.getElementById("hidden-daq-data");
                         if (hiddenDiv) {
                             hiddenDiv.textContent = window.daqState.counter.toString();
-                            if (window.daqState.counter % 10 === 0) {
-                                console.log(`Hidden div updated: counter ${window.daqState.counter}`);
-                            }
                         } else {
                             if (window.daqState.counter % 50 === 0) {
                                 console.error("Hidden div 'hidden-daq-data' not found!");

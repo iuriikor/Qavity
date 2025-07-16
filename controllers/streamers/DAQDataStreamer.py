@@ -10,7 +10,7 @@ import logging
 
 
 class DAQDataStreamer:
-    def __init__(self, daq, path, sampling_rate=1000, buffer_size=20000, update_rate=10):
+    def __init__(self, daq, path, sampling_rate=200, buffer_size=20000, update_rate=4):
         self._daq = daq
         self._path = path
         self._sampling_rate = sampling_rate  # 1 kS/s default
@@ -53,7 +53,7 @@ class DAQDataStreamer:
             try:
                 # Define the data acquisition coroutine
                 async def acquire_data():
-                    samples_per_read = 200  # Read 200 samples at a time for efficiency
+                    samples_per_read = 50  # Read 200 samples at a time for efficiency
                     sleep_time = 1.0 / self._update_rate
 
                     while self._streaming:
@@ -82,7 +82,7 @@ class DAQDataStreamer:
                             
                             if self._debug_enabled and len(self._timing_stats['acquisition_times']) % 50 == 0:
                                 avg_acq_time = sum(self._timing_stats['acquisition_times']) / len(self._timing_stats['acquisition_times'])
-                                self._logger.info(f"Avg acquisition time: {avg_acq_time*1000:.2f}ms")
+                                # self._logger.info(f"Avg acquisition time: {avg_acq_time*1000:.2f}ms")
 
                         # Sleep to maintain the sampling rate
                         await asyncio.sleep(sleep_time)
@@ -130,67 +130,50 @@ class DAQDataStreamer:
 
                             # Send binary data to frontend with detailed diagnostics
                             data_size_bytes = len(binary_data)
-                            data_size_kb = data_size_bytes / 1024
+                            # data_size_kb = data_size_bytes / 1024
                             
-                            send_start = time.time()
+                            # send_start = time.time()
                             await websocket.send(binary_data)
-                            send_time = time.time() - send_start
-                            
-                            # Log detailed timing information
-                            # Track WebSocket performance and implement backpressure
-                            if send_time > 0.020:  # Consider >20ms as "slow"
-                                consecutive_slow_sends += 1
-                            else:
-                                consecutive_slow_sends = 0
-                            
-                            if send_time > 0.005:  # Log if send takes >5ms
-                                throughput = data_size_kb / send_time  # KB/s
-                                samples_sent = sum(len(data[-getattr(self, '_samples_per_update', 200):]) for data in buffer_data.values())
-                                self._logger.warning(f"WebSocket send: {send_time*1000:.2f}ms, {data_size_kb:.1f}KB, {samples_sent} samples, {throughput:.1f}KB/s")
-                            
-                            # Track transmission timing and data size
-                            transmission_time = time.time() - start_time
-                            data_size = len(binary_data)
-                            
-                            self._timing_stats['transmission_times'].append(transmission_time)
-                            self._timing_stats['data_sizes'].append(data_size)
-                            
-                            # Keep only last 100 measurements
-                            if len(self._timing_stats['transmission_times']) > 100:
-                                self._timing_stats['transmission_times'] = self._timing_stats['transmission_times'][-100:]
-                                self._timing_stats['data_sizes'] = self._timing_stats['data_sizes'][-100:]
-                            
+                            # send_time = time.time() - send_start
+                            #
+                            # # Log detailed timing information
+                            # # Track WebSocket performance and implement backpressure
+                            # if send_time > 0.020:  # Consider >20ms as "slow"
+                            #     consecutive_slow_sends += 1
+                            # else:
+                            #     consecutive_slow_sends = 0
+                            #
+                            # if send_time > 0.001:  # Log if send takes >5ms
+                            #     throughput = data_size_kb / send_time  # KB/s
+                            #     samples_sent = sum(len(data[-getattr(self, '_samples_per_update', 200):]) for data in buffer_data.values())
+                            #     self._logger.warning(f"WebSocket send: {send_time*1000:.2f}ms, {data_size_kb:.1f}KB, {samples_sent} samples, {throughput:.1f}KB/s")
+                            #
+                            # # Track transmission timing and data size
+                            # transmission_time = time.time() - start_time
+                            # data_size = len(binary_data)
+                            #
+                            # self._timing_stats['transmission_times'].append(transmission_time)
+                            # self._timing_stats['data_sizes'].append(data_size)
+                            #
+                            # # Keep only last 100 measurements
+                            # if len(self._timing_stats['transmission_times']) > 100:
+                            #     self._timing_stats['transmission_times'] = self._timing_stats['transmission_times'][-100:]
+                            #     self._timing_stats['data_sizes'] = self._timing_stats['data_sizes'][-100:]
+                            #
                             # Periodic debug logging
-                            if self._debug_enabled and len(self._timing_stats['transmission_times']) % 50 == 0:
-                                avg_trans_time = sum(self._timing_stats['transmission_times']) / len(self._timing_stats['transmission_times'])
-                                avg_data_size = sum(self._timing_stats['data_sizes']) / len(self._timing_stats['data_sizes'])
-                                time_since_last = current_time - self._timing_stats['last_timestamp']
-                                self._timing_stats['last_timestamp'] = current_time
-                                
-                                self._logger.info(f"Transmission: {avg_trans_time*1000:.2f}ms avg, {avg_data_size/1024:.1f}KB avg, {time_since_last:.2f}s since last log")
+                            # if self._debug_enabled and len(self._timing_stats['transmission_times']) % 50 == 0:
+                            #     avg_trans_time = sum(self._timing_stats['transmission_times']) / len(self._timing_stats['transmission_times'])
+                            #     avg_data_size = sum(self._timing_stats['data_sizes']) / len(self._timing_stats['data_sizes'])
+                            #     time_since_last = current_time - self._timing_stats['last_timestamp']
+                            #     self._timing_stats['last_timestamp'] = current_time
+                            #
+                            #     self._logger.info(f"Transmission: {avg_trans_time*1000:.2f}ms avg, {avg_data_size/1024:.1f}KB avg, {time_since_last:.2f}s since last log")
 
                         except Exception as e:
                             self._logger.error(f"Error in update_frontend: {e}")
                             import traceback
                             traceback.print_exc()
-
-                        # Dynamic sleep with backpressure to prevent queue buildup
-                        actual_interval = time.time() - last_send_time
-                        
-                        # If we've had consecutive slow sends, increase interval to prevent queue buildup
-                        if consecutive_slow_sends > 3:
-                            adjusted_interval = update_interval * 1.5  # Slow down by 50%
-                            self._logger.info(f"Applying backpressure: {consecutive_slow_sends} slow sends, increasing interval to {adjusted_interval*1000:.1f}ms")
-                        else:
-                            adjusted_interval = update_interval
-                        
-                        if actual_interval < adjusted_interval:
-                            sleep_time = adjusted_interval - actual_interval
-                            await asyncio.sleep(sleep_time)
-                        else:
-                            # If we're behind, yield control briefly but don't skip
-                            await asyncio.sleep(0.001)
-                        
+                        await asyncio.sleep(update_interval)
                         last_send_time = time.time()
 
                 # Main websocket loop - run acquisition and transmission in parallel
@@ -247,7 +230,7 @@ class DAQDataStreamer:
         print("DAQ streaming stopped")
         return success
     
-    def set_data_reduction(self, max_samples=2000, update_rate=20):
+    def set_data_reduction(self, max_samples=200, update_rate=4):
         """
         Adjust data reduction settings to reduce latency
         
