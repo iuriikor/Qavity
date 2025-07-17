@@ -11,7 +11,7 @@ from components.CavityDriveAIO import CavityDriveAIO
 from config import config  # Import the config
 
 # Register this as a Dash page
-dash.register_page(__name__, path='/monitors')
+# dash.register_page(__name__, path='/monitors')
 
 
 def layout():
