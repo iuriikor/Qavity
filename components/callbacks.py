@@ -471,12 +471,12 @@ for plot_idx in range(4):
             }};
         }}
         """,
-        Output({{'type': 'signal-graph', 'index': plot_idx}}, 'figure'),
+        Output({'type': 'signal-graph', 'index': plot_idx}, 'figure'),
         Input("hidden-daq-data", "children"),
-        Input({{'type': 'channel-selector', 'index': plot_idx}}, 'value'),
-        Input({{'type': 'y-scale-mode', 'index': plot_idx}}, 'value'),
-        Input({{'type': 'y-min', 'index': plot_idx}}, 'value'),
-        Input({{'type': 'y-max', 'index': plot_idx}}, 'value'),
+        Input({'type': 'channel-selector', 'index': plot_idx}, 'value'),
+        Input({'type': 'y-scale-mode', 'index': plot_idx}, 'value'),
+        Input({'type': 'y-min', 'index': plot_idx}, 'value'),
+        Input({'type': 'y-max', 'index': plot_idx}, 'value'),
         Input("display-samples-select", "value"),
         prevent_initial_call=True
     )
