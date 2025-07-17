@@ -66,7 +66,7 @@ valve_control_board = RelayBoard(comport='COM6', output_ports=valve_ports)
 
 # DAQ CARDS
 daq_sampling_rate = 200
-daq_update_rate = 4
+daq_update_rate = 10
 
 daq_card = cDAQ9174()
 # Configure DAQ with actual channels
@@ -82,7 +82,7 @@ daq_streamer = DAQDataStreamer(
     buffer_size=20000,   # 20 kS
     update_rate=daq_update_rate     # 4 Hz
 )
-daq_streamer.set_data_reduction(max_samples=20000, update_rate=4)
+daq_streamer.set_data_reduction(max_samples=20000, update_rate=daq_update_rate)
 # Picoscope  
 pico = PicoInterface(name='picoscope_1')
 

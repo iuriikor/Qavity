@@ -55,7 +55,7 @@ class cDAQ9174:
             self.task.timing.cfg_samp_clk_timing(
                 rate=sample_rate,
                 sample_mode=AcquisitionType.CONTINUOUS,
-                samps_per_chan=1000  # Internal buffer size
+                samps_per_chan=10000  # Internal buffer size
             )
 
             # Create reader

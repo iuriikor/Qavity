@@ -22,7 +22,7 @@ class MirnyRamp(EnvExperiment):
     @kernel
     def run(self):
         # Define scan parameters
-        start_freq_kHz = 420000.0
+        start_freq_kHz = 440000.0
         end_freq_kHz = 488800.0
         # STEP HAS TO ALWAYS BE POSITIVE
         step_kHz = 1.0

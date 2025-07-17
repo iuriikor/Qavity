@@ -20,7 +20,7 @@ import os
 # Add parent directory to path to import from main app
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from devices import daq_streamer
+from devices import daq_streamer, daq_card
 from controllers.DAQ.NI_cDAQ9174 import cDAQ9174
 
 _dash_renderer._set_react_version("18.2.0")
@@ -35,12 +35,13 @@ quart_app = Quart(__name__)
 # Initialize Dash app with Flask server
 app = dash.Dash(server=dash_server, external_stylesheets=dmc.styles.ALL)
 
-# Create actual NI DAQ device with same configuration as main app
-ni_daq_device = cDAQ9174()
-# Configure DAQ with actual channels - same as main app
-daq_channels = ['cDAQ1Mod1/ai0', 'cDAQ1Mod1/ai1', 'cDAQ1Mod1/ai2', 'cDAQ1Mod1/ai3',
-                'cDAQ1Mod2/ai0', 'cDAQ1Mod2/ai1', 'cDAQ1Mod2/ai2', 'cDAQ1Mod2/ai3']
-ni_daq_device.initialize(channels=daq_channels, sample_rate=1000)
+# # Create actual NI DAQ device with same configuration as main app
+# ni_daq_device = cDAQ9174()
+ni_daq_device = daq_card
+# # Configure DAQ with actual channels - same as main app
+# daq_channels = ['cDAQ1Mod1/ai0', 'cDAQ1Mod1/ai1', 'cDAQ1Mod1/ai2', 'cDAQ1Mod1/ai3',
+#                 'cDAQ1Mod2/ai0', 'cDAQ1Mod2/ai1', 'cDAQ1Mod2/ai2', 'cDAQ1Mod2/ai3']
+# ni_daq_device.initialize(channels=daq_channels, sample_rate=1000)
 
 # Replace the device in the existing streamer
 daq_streamer._daq = ni_daq_device
@@ -70,7 +71,8 @@ async def daq_debug_stream():
     try:
         # Define the data acquisition coroutine - same as main app
         async def acquire_data():
-            samples_per_read = 50  # Read 50 samples at a time for efficiency
+            # samples_per_read = 200  # Read 50 samples at a time for efficiency
+            samples_per_read = int(daq_streamer._daq.sample_rate/daq_streamer._update_rate)
             sleep_time = 1.0 / daq_streamer._update_rate
             
             while daq_streamer._streaming:
