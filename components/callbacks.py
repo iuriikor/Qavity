@@ -357,7 +357,7 @@ app.clientside_callback(
 for plot_idx in range(4):
     app.clientside_callback(
         f"""
-        function(dataSignal, channelIndices, yScaleMode, yMin, yMax, displaySamples) {{
+        function(dataSignal, channelIndices, yScaleMode, yMin, yMax, displaySamples, legendStrings, plotConfigStore) {{
             // Do not try to get data on window loading
             if (!dataSignal || !window.daqState || !window.daqState.data) {{
                 return dash_clientside.no_update;
@@ -366,6 +366,24 @@ for plot_idx in range(4):
             const data = window.daqState.data;
             const displaySize = parseInt(displaySamples) || 1000;
             const selectedChannels = channelIndices || [];
+            
+            // Get plot configuration for this specific plot
+            let plotConfig = {{}};
+            if (plotConfigStore && 
+                plotConfigStore.plots && 
+                Array.isArray(plotConfigStore.plots) &&
+                plotConfigStore.plots[{plot_idx}]) {{
+                plotConfig = plotConfigStore.plots[{plot_idx}];
+            }}
+            
+            // Get legend strings from config or textarea input
+            const configLegendStrings = plotConfig.legend_strings || [];
+            const textareaLegendStrings = legendStrings ? legendStrings.split(',').map(s => s.trim()).filter(s => s) : [];
+            const finalLegendStrings = textareaLegendStrings.length > 0 ? textareaLegendStrings : configLegendStrings;
+            
+            // Extract plot dimensions from config
+            const plotWidth = plotConfig.width || 600;
+            const plotHeight = plotConfig.height || 300;
             
             if (selectedChannels.length === 0) {{
                 // If no channels selected, return empty plot
@@ -412,11 +430,17 @@ for plot_idx in range(4):
                         }}
                     }}
 
+                    // Use legend string if available, otherwise use channel name
+                    let displayName = channel.split('/').pop();
+                    if (finalLegendStrings && i < finalLegendStrings.length && finalLegendStrings[i]) {{
+                        displayName = finalLegendStrings[i];
+                    }}
+                    
                     traces.push({{
                         x: xData,
                         y: displayData,
                         mode: 'lines',
-                        name: channel.split('/').pop(),
+                        name: displayName,
                         line: {{color: colors[i % colors.length], width: 2}}
                     }});
                 }}
@@ -432,7 +456,8 @@ for plot_idx in range(4):
                 yaxis: {{
                     title: 'Voltage (V)'
                 }},
-                height: 300,
+                height: plotHeight,
+                width: plotWidth,
                 plot_bgcolor: 'rgba(0,0,0,0)',
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 legend: {{
@@ -478,5 +503,7 @@ for plot_idx in range(4):
         Input({'type': 'y-min', 'index': plot_idx}, 'value'),
         Input({'type': 'y-max', 'index': plot_idx}, 'value'),
         Input("display-samples-select", "value"),
+        Input({'type': 'legend-strings', 'index': plot_idx}, 'value'),
+        Input("plot-config-store", "data"),
         prevent_initial_call=True
     )

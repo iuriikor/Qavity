@@ -6,6 +6,7 @@ from dash_extensions import WebSocket
 import json
 
 from devices import daq_streamer, daq_card, daq_update_rate
+from config import config  # Import the config
 
 # Register this as a Dash page
 dash.register_page(__name__, path='/monitors')
@@ -49,16 +50,32 @@ def layout():
         html.Div(id="status-display", style={"marginLeft": "20px"}),
     ], mb="md")
 
+    # Load plot configurations from config file
+    plot_configs = config.get('plots', [])
+    
+    # Make sure we have 4 plots defined
+    while len(plot_configs) < 4:
+        plot_configs.append({})
+    
     # Plots with settings dropdowns
     graphs = []
     for i in range(4):
-        # Default to first available channel for each plot
-        default_channel = [daq_card.channels[i]] if i < len(daq_card.channels) else []
+        # Get configuration for this plot with defaults if not provided
+        plot_config = plot_configs[i] if i < len(plot_configs) else {}
+        title = plot_config.get('title', f"Plot {i + 1}")
+        channels = plot_config.get('channels', [daq_card.channels[i]] if i < len(daq_card.channels) else [])
+        legend_strings = plot_config.get('legend_strings', [])
+        y_scale_mode = plot_config.get('y_scale_mode', 'auto')
+        y_min = plot_config.get('y_min', -10)
+        y_max = plot_config.get('y_max', 10)
+        display_samples = plot_config.get('display_samples', '1000')
+        plot_width = plot_config.get('width', 600)
+        plot_height = plot_config.get('height', 300)
         
         graph_card = dmc.Card([
             dmc.CardSection([
                 dmc.Group([
-                    dmc.Text(f"Plot {i + 1}", fw=500, size="lg", style={"width": "60%"}),
+                    dmc.Text(title, fw=500, size="lg", style={"width": "60%"}),
                     dmc.Menu([
                         dmc.MenuTarget(
                             dmc.Button("Settings", variant="outline", size="xs",
@@ -69,7 +86,15 @@ def layout():
                             dmc.MultiSelect(
                                 id={"type": "channel-selector", "index": i},
                                 data=channel_options,
-                                value=default_channel,
+                                value=channels,
+                                style={"width": "100%", "marginBottom": "10px"}
+                            ),
+                            dmc.Divider(style={"margin": "10px 0"}),
+                            dmc.Text("Legend Strings", fw="bold"),
+                            dmc.Textarea(
+                                id={"type": "legend-strings", "index": i},
+                                placeholder="Enter legend strings separated by commas",
+                                value=", ".join(legend_strings) if legend_strings else "",
                                 style={"width": "100%", "marginBottom": "10px"}
                             ),
                             dmc.Divider(style={"margin": "10px 0"}),
@@ -77,7 +102,7 @@ def layout():
                             dmc.Group([
                                 dmc.RadioGroup(
                                     id={"type": "y-scale-mode", "index": i},
-                                    value="auto",
+                                    value=y_scale_mode,
                                     children=[
                                         dmc.Radio(value="auto", label="Auto"),
                                         dmc.Radio(value="manual", label="Manual")
@@ -88,20 +113,20 @@ def layout():
                                 dmc.NumberInput(
                                     id={"type": "y-min", "index": i},
                                     label="Min",
-                                    value=-10,
+                                    value=y_min,
                                     style={"width": "45%"},
                                     allowDecimal=True,
                                     step=0.1,
-                                    disabled=True
+                                    disabled=y_scale_mode != "manual"
                                 ),
                                 dmc.NumberInput(
                                     id={"type": "y-max", "index": i},
                                     label="Max",
-                                    value=10,
+                                    value=y_max,
                                     style={"width": "45%"},
                                     allowDecimal=True,
                                     step=0.1,
-                                    disabled=True
+                                    disabled=y_scale_mode != "manual"
                                 ),
                             ], direction='row', justify='space-between', style={"marginBottom": "10px"}),
                         ]),
@@ -117,7 +142,8 @@ def layout():
                             margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
                             xaxis={'title': 'Samples'},
                             yaxis={'title': 'Voltage (V)'},
-                            height=300
+                            height=plot_height,
+                            width=plot_width
                         )
                     },
                     config={'displayModeBar': False}
@@ -130,7 +156,14 @@ def layout():
     websocket = WebSocket(url="ws://127.0.0.1:5000/daq_stream", id="ws-daq")
 
     # Hidden div for triggering plot updates when data is received
-    hidden_div = html.Div(id="hidden-daq-data", style={"display": "none"})
+    hidden_div = html.Div([
+        html.Div(id="hidden-daq-data", style={"display": "none"}),
+        # Store the full plot configuration to ensure correct data structure
+        dcc.Store(
+            id="plot-config-store",
+            data={"plots": plot_configs}
+        )
+    ])
 
     # Main layout - simplified for DAQ only
     return dmc.MantineProvider([
