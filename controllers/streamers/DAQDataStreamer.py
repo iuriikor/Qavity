@@ -96,8 +96,8 @@ class DAQDataStreamer:
                     last_send_time = time.time()
                     consecutive_slow_sends = 0
                     
-                    # Track the sample count to detect buffer wrapping
-                    last_sample_count = 0
+                    # Track the sample count to detect new data and send only incremental updates
+                    last_sent_sample_count = 0
 
                     while self._streaming:
                         try:
@@ -118,21 +118,31 @@ class DAQDataStreamer:
                             # Check if buffer has new data by comparing sample counts
                             current_sample_count = self._buffer.sample_count
                             
-                            if current_sample_count > last_sample_count:
-                                # We have new data - send the most recent samples
+                            if current_sample_count > last_sent_sample_count:
+                                # Calculate how many new samples we have
+                                new_samples = current_sample_count - last_sent_sample_count
+                                
+                                # Safety check: if we have more new samples than buffer size,
+                                # we've wrapped around and lost some data - send entire buffer
+                                if new_samples > self._buffer_size:
+                                    samples_to_send = min(self._buffer_size, samples_per_update)
+                                else:
+                                    # Limit the number of samples to send to prevent overwhelming frontend
+                                    samples_to_send = min(new_samples, samples_per_update)
+                                
                                 for channel_name, data in buffer_data.items():
                                     if len(data) == 0:
                                         continue
                                     
-                                    # Always send the most recent samples_per_update samples
-                                    # This handles circular buffer wrapping automatically
-                                    data_to_send = data[-samples_per_update:] if len(data) > samples_per_update else data
+                                    # Send only the most recent 'samples_to_send' samples
+                                    # This ensures we send new data without echoing
+                                    data_to_send = data[-samples_to_send:] if len(data) >= samples_to_send else data
                                     
                                     if len(data_to_send) > 0:
                                         channels_to_send[channel_name] = data_to_send
                                 
-                                # Update the last sample count
-                                last_sample_count = current_sample_count
+                                # Update the last sent sample count
+                                last_sent_sample_count = current_sample_count
                             
                             # Skip if no new data to send
                             if len(channels_to_send) == 0:
