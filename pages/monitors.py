@@ -190,9 +190,10 @@ def control_streaming(start_clicks, stop_clicks, update_rate):
 
 # Enable/disable manual Y-axis scale inputs for each plot
 @callback(
-    [Output({"type": "y-min", "index": MATCH}, "disabled"),
-     Output({"type": "y-max", "index": MATCH}, "disabled")],
-    Input({"type": "y-scale-mode", "index": MATCH}, "value")
+    [Output({"type": "y-min", "index": MATCH}, "disabled", allow_duplicate=True),
+     Output({"type": "y-max", "index": MATCH}, "disabled", allow_duplicate=True)],
+    Input({"type": "y-scale-mode", "index": MATCH}, "value"),
+    prevent_initial_call=True
 )
 def toggle_y_scale_inputs(scale_mode):
     """Enable or disable Y-axis min/max inputs based on scale mode"""
