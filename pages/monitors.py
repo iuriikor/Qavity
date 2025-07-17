@@ -5,17 +5,14 @@ import plotly.graph_objs as go
 from dash_extensions import WebSocket
 import json
 
-from devices import daq_streamer, daq_card, pico, mirny_cavity_drive, daq_update_rate
-from components.PicoscopeInterfaceAIO import PicoscopeInterfaceAIO
-from components.CavityDriveAIO import CavityDriveAIO
-from config import config  # Import the config
+from devices import daq_streamer, daq_card, daq_update_rate
 
 # Register this as a Dash page
 dash.register_page(__name__, path='/monitors')
 
 
 def layout():
-    """Layout for the DAQ monitoring page - simplified version"""
+    """Layout for the DAQ monitoring page - DAQ control and plots only"""
 
     # Control section - using full layout style
     control_section = dmc.Flex([
@@ -73,10 +70,7 @@ def layout():
             # Status display
             html.Div(id="status-display", style={"marginBottom": "10px"}),
         ], gap="md", direction='column', justify='flex-start', align='center')
-    ], justify='flex-start', align='center', direction='column', mr='xs')
-    
-    # Control panel
-    DAQ_card = dmc.Card([], withBorder=True, p="sm", mr='sm', mb='sm')
+    ], justify='flex-start', align='center', direction='column', mb='md')
 
     # Simple plots for DAQ channels - similar to debug example
     graphs = []
@@ -105,27 +99,26 @@ def layout():
     # Hidden div for triggering plot updates when data is received
     hidden_div = html.Div(id="hidden-daq-data", style={"display": "none"})
 
-    # Configure DAQ card layout - using full layout structure with simplified plots
-    DAQ_card.children = dmc.Flex([
-        control_section,
-        dmc.Flex([graphs[0], graphs[2]], gap="xs", style={"width": "100%"}, mt='sm', direction='column'),
-        dmc.Flex([graphs[1], graphs[3]], gap="xs", style={"width": "100%"}, mt='sm', direction='column'),
-    ], direction='row')
-    
-    # Create pico and cavity drive interfaces - from full layout
-    pico_interface = PicoscopeInterfaceAIO(aio_id='picoscope_1', name='picoscope_1', device=pico)
-    cavity_drive_interface = dmc.Flex([
-        CavityDriveAIO(aio_id='cavity_drive', name='Fiber EOM cavity drive', device=mirny_cavity_drive, ch=0)
-    ])
-
-    # Main layout - using full layout structure
+    # Main layout - simplified for DAQ only
     return dmc.MantineProvider([
-        dmc.Flex([
-            dmc.Flex([DAQ_card, cavity_drive_interface], direction='column'),
-            pico_interface,
+        dmc.Container([
+            dmc.Title("DAQ Monitor", order=1, mb="md"),
+            
+            # Controls
+            control_section,
+            
+            # Plots in a simple grid - 2x2 layout
+            dmc.SimpleGrid(
+                cols=2,
+                children=graphs,
+                spacing="md"
+            ),
+            
+            # WebSocket and hidden trigger
             websocket,
-            hidden_div
-        ], direction="row", wrap='wrap'),
+            hidden_div,
+            
+        ], size="xl")
     ])
 
 

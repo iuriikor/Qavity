@@ -47,7 +47,9 @@ def make_layout():
         dmc.Anchor(
             dmc.Button("Loading", variant="subtle", color="gray"),
                         href='/loading'),
-        dmc.Button("Cavity", variant="subtle", color="gray"),
+        dmc.Anchor(
+            dmc.Button("Cavity", variant="subtle", color="gray"),
+            href='/cavity'),
         dmc.Button("Detection", variant="subtle", color="gray"),
         dmc.Button("System Info", variant="subtle", color="gray"),
     ]
