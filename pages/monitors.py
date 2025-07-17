@@ -5,7 +5,7 @@ import plotly.graph_objs as go
 from dash_extensions import WebSocket
 import json
 
-from devices import daq_streamer, daq_card, pico, mirny_cavity_drive
+from devices import daq_streamer, daq_card, pico, mirny_cavity_drive, daq_update_rate
 from components.PicoscopeInterfaceAIO import PicoscopeInterfaceAIO
 from components.CavityDriveAIO import CavityDriveAIO
 from config import config  # Import the config
@@ -26,7 +26,7 @@ def layout():
             dmc.NumberInput(
                 id="update-rate-input",
                 label="Update Rate (Hz)",
-                value=10,
+                value=daq_update_rate,
                 min=1,
                 max=100,
                 step=1,
@@ -145,7 +145,7 @@ def control_streaming(start_clicks, stop_clicks, update_rate):
     trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
     
     if trigger_id == "start-daq-btn" and start_clicks:
-        daq_streamer._update_rate = update_rate or 10
+        daq_streamer._update_rate = update_rate or daq_update_rate
         success = daq_streamer.start()
         if success:
             return dmc.Alert("Streaming started", color="green")
@@ -157,7 +157,7 @@ def control_streaming(start_clicks, stop_clicks, update_rate):
         return dmc.Alert("Streaming stopped", color="orange")
     
     elif trigger_id == "update-rate-input":
-        daq_streamer._update_rate = update_rate or 10
+        daq_streamer._update_rate = update_rate or daq_update_rate
         return dmc.Alert(f"Update rate set to {update_rate}Hz", color="blue")
     
     return ""
