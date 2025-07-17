@@ -353,94 +353,130 @@ app.clientside_callback(
     Input("ws-daq", "message")
 )
 
-# Simple graph update callbacks - from debug example
-from devices import daq_card
-
-# Graph update callbacks for DAQ channels
-for i in range(min(4, len(daq_card.channels))):
-    channel_name = daq_card.channels[i]
-    
+# Graph update callbacks for each plot with per-plot settings
+for plot_idx in range(4):
     app.clientside_callback(
         f"""
-        function(dataSignal, displaySamples, yScaleMode, yMin, yMax) {{
+        function(dataSignal, channelIndices, yScaleMode, yMin, yMax, displaySamples) {{
+            // Do not try to get data on window loading
             if (!dataSignal || !window.daqState || !window.daqState.data) {{
                 return dash_clientside.no_update;
             }}
             
             const data = window.daqState.data;
-            const channelName = "{channel_name}";
             const displaySize = parseInt(displaySamples) || 1000;
+            const selectedChannels = channelIndices || [];
             
-            if (!data[channelName] || data[channelName].length === 0) {{
+            if (selectedChannels.length === 0) {{
+                // If no channels selected, return empty plot
                 return {{
                     'data': [],
                     'layout': {{
                         margin: {{l: 40, b: 40, t: 10, r: 10}},
                         xaxis: {{title: 'Samples', range: [0, displaySize]}},
                         yaxis: {{title: 'Voltage (V)'}},
-                        height: 300
+                        height: 300,
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        paper_bgcolor: 'rgba(0,0,0,0)'
                     }}
                 }};
             }}
-            
-            const channelData = data[channelName];
-            const displayData = channelData.length > displaySize ? 
-                channelData.slice(-displaySize) : channelData;
-            
-            const xData = Array.from({{length: displayData.length}}, (_, i) => i);
-            
-            // Calculate Y-axis range
-            let yAxisRange;
+
+            // Set colors for multiple traces
+            const colors = ['#1E88E5', '#F44336', '#4CAF50', '#FF9800', '#9C27B0', '#795548', '#607D8B', '#3F51B5'];
+
+            // Create a trace for each selected channel
+            const traces = [];
+            let dataMin = null;
+            let dataMax = null;
+
+            selectedChannels.forEach((channel, i) => {{
+                if (data[channel] && data[channel].length > 0) {{
+                    const channelData = data[channel];
+                    const displayData = channelData.length > displaySize ? 
+                        channelData.slice(-displaySize) : channelData;
+
+                    // Create x-axis data
+                    const xData = Array.from({{length: displayData.length}}, (_, i) => i);
+
+                    // Update min/max for auto-scaling
+                    if (displayData.length > 0) {{
+                        const minVal = Math.min(...displayData);
+                        const maxVal = Math.max(...displayData);
+
+                        if (dataMin === null || minVal < dataMin) {{
+                            dataMin = minVal;
+                        }}
+                        if (dataMax === null || maxVal > dataMax) {{
+                            dataMax = maxVal;
+                        }}
+                    }}
+
+                    traces.push({{
+                        x: xData,
+                        y: displayData,
+                        mode: 'lines',
+                        name: channel.split('/').pop(),
+                        line: {{color: colors[i % colors.length], width: 2}}
+                    }});
+                }}
+            }});
+
+            // Create layout
+            const layout = {{
+                margin: {{l: 40, b: 40, t: 10, r: 10}},
+                xaxis: {{
+                    title: 'Samples',
+                    range: [0, displaySize]
+                }},
+                yaxis: {{
+                    title: 'Voltage (V)'
+                }},
+                height: 300,
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                legend: {{
+                    x: 0,
+                    y: 1.1,
+                    orientation: 'h'
+                }},
+                showlegend: selectedChannels.length > 1
+            }};
+
+            // Apply Y-axis range settings based on mode
             if (yScaleMode === 'manual') {{
                 const yMinValue = parseFloat(yMin);
                 const yMaxValue = parseFloat(yMax);
-                
+
                 if (!isNaN(yMinValue) && !isNaN(yMaxValue) && yMaxValue > yMinValue) {{
-                    yAxisRange = [yMinValue, yMaxValue];
+                    layout.yaxis.range = [yMinValue, yMaxValue];
                 }} else {{
-                    // Fallback to auto if manual values are invalid
-                    const dataMin = Math.min(...displayData);
-                    const dataMax = Math.max(...displayData);
-                    const range = dataMax - dataMin;
-                    const margin = Math.max(range * 0.1, 0.01);
-                    yAxisRange = [dataMin - margin, dataMax + margin];
+                    if (dataMin !== null && dataMax !== null) {{
+                        const range = dataMax - dataMin;
+                        const margin = range * 0.1;
+                        layout.yaxis.range = [dataMin - margin, dataMax + margin];
+                    }}
                 }}
             }} else {{
-                // Auto scale
-                if (displayData.length > 0) {{
-                    const dataMin = Math.min(...displayData);
-                    const dataMax = Math.max(...displayData);
+                if (dataMin !== null && dataMax !== null) {{
                     const range = dataMax - dataMin;
                     const margin = Math.max(range * 0.1, 0.01);
-                    yAxisRange = [dataMin - margin, dataMax + margin];
-                }} else {{
-                    yAxisRange = [-1, 1];
+                    layout.yaxis.range = [dataMin - margin, dataMax + margin];
                 }}
             }}
-            
+
             return {{
-                'data': [{{
-                    x: xData,
-                    y: displayData,
-                    mode: 'lines',
-                    line: {{color: '#1E88E5', width: 2}}
-                }}],
-                'layout': {{
-                    margin: {{l: 40, b: 40, t: 10, r: 10}},
-                    xaxis: {{title: 'Samples', range: [0, displaySize]}},
-                    yaxis: {{title: 'Voltage (V)', range: yAxisRange}},
-                    height: 300,
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    paper_bgcolor: 'rgba(0,0,0,0)'
-                }}
+                'data': traces,
+                'layout': layout
             }};
         }}
         """,
-        Output(f"graph-{i}", "figure"),
+        Output({{'type': 'signal-graph', 'index': plot_idx}}, 'figure'),
         Input("hidden-daq-data", "children"),
+        Input({{'type': 'channel-selector', 'index': plot_idx}}, 'value'),
+        Input({{'type': 'y-scale-mode', 'index': plot_idx}}, 'value'),
+        Input({{'type': 'y-min', 'index': plot_idx}}, 'value'),
+        Input({{'type': 'y-max', 'index': plot_idx}}, 'value'),
         Input("display-samples-select", "value"),
-        Input("y-scale-mode", "value"),
-        Input("y-min", "value"),
-        Input("y-max", "value"),
         prevent_initial_call=True
     )

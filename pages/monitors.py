@@ -14,83 +14,116 @@ dash.register_page(__name__, path='/monitors')
 def layout():
     """Layout for the DAQ monitoring page - DAQ control and plots only"""
 
-    # Control section - using full layout style
-    control_section = dmc.Flex([
-        dmc.Text("DAQ Control", size="xl"),
-        dmc.Flex([
-            dmc.Button("Start Monitoring", id="start-daq-btn", color="green"),
-            dmc.Button("Stop", id="stop-daq-btn", color="red"),
-            dmc.NumberInput(
-                id="update-rate-input",
-                label="Update Rate (Hz)",
-                value=daq_update_rate,
-                min=1,
-                max=100,
-                step=1,
-                style={"width": 150}
-            ),
-            dmc.Select(
-                id="display-samples-select",
-                label="Display Samples",
-                data=[
-                    {'value': '100', 'label': '100 samples'},
-                    {'value': '500', 'label': '500 samples'},
-                    {'value': '1000', 'label': '1000 samples'},
-                    {'value': '2000', 'label': '2000 samples'},
-                ],
-                value='1000',
-                style={"width": 150}
-            ),
-            # Y-axis controls integrated into control section
-            dmc.Text("Y-Axis Scale", fw="bold"),
-            dmc.RadioGroup(
-                id="y-scale-mode",
-                value="auto",
-                children=[
-                    dmc.Radio(value="auto", label="Auto"),
-                    dmc.Radio(value="manual", label="Manual")
-                ],
-            ),
-            dmc.NumberInput(
-                id="y-min",
-                label="Min",
-                value=-10,
-                style={"width": 100},
-                step=0.1,
-                disabled=True
-            ),
-            dmc.NumberInput(
-                id="y-max",
-                label="Max",
-                value=10,
-                style={"width": 100},
-                step=0.1,
-                disabled=True
-            ),
-            # Status display
-            html.Div(id="status-display", style={"marginBottom": "10px"}),
-        ], gap="md", direction='column', justify='flex-start', align='center')
-    ], justify='flex-start', align='center', direction='column', mb='md')
+    # Create a list of available channels for the selectors
+    channel_options = [
+        {'value': ch, 'label': ch.split('/')[-1]}
+        for ch in daq_card.channels
+    ]
 
-    # Simple plots for DAQ channels - similar to debug example
+    # Horizontal control section
+    control_section = dmc.Group([
+        dmc.Button("Start Monitoring", id="start-daq-btn", color="green"),
+        dmc.Button("Stop", id="stop-daq-btn", color="red"),
+        dmc.NumberInput(
+            id="update-rate-input",
+            label="Update Rate (Hz)",
+            value=daq_update_rate,
+            min=1,
+            max=100,
+            step=1,
+            style={"width": 150}
+        ),
+        dmc.Select(
+            id="display-samples-select",
+            label="Display Samples",
+            data=[
+                {'value': '100', 'label': '100 samples'},
+                {'value': '500', 'label': '500 samples'},
+                {'value': '1000', 'label': '1000 samples'},
+                {'value': '2000', 'label': '2000 samples'},
+            ],
+            value='1000',
+            style={"width": 150}
+        ),
+        # Status display
+        html.Div(id="status-display", style={"marginLeft": "20px"}),
+    ], mb="md")
+
+    # Plots with settings dropdowns
     graphs = []
-    for i in range(min(4, len(daq_card.channels))):
+    for i in range(4):
+        # Default to first available channel for each plot
+        default_channel = [daq_card.channels[i]] if i < len(daq_card.channels) else []
+        
         graph_card = dmc.Card([
-            dmc.Text(f"Channel: {daq_card.channels[i]}", fw=500, mb="sm"),
-            dcc.Graph(
-                id=f"graph-{i}",
-                figure={
-                    'data': [go.Scatter(x=[], y=[], mode='lines')],
-                    'layout': go.Layout(
-                        margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                        xaxis={'title': 'Samples'},
-                        yaxis={'title': 'Voltage (V)'},
-                        height=300
-                    )
-                },
-                config={'displayModeBar': False}
-            )
-        ], withBorder=True, p="sm")
+            dmc.CardSection([
+                dmc.Group([
+                    dmc.Text(f"Plot {i + 1}", fw=500, size="lg", style={"width": "60%"}),
+                    dmc.Menu([
+                        dmc.MenuTarget(
+                            dmc.Button("Settings", variant="outline", size="xs",
+                                       id={"type": "settings-btn", "index": i})
+                        ),
+                        dmc.MenuDropdown([
+                            dmc.Text("Channel Selection", fw="bold"),
+                            dmc.MultiSelect(
+                                id={"type": "channel-selector", "index": i},
+                                data=channel_options,
+                                value=default_channel,
+                                style={"width": "100%", "marginBottom": "10px"}
+                            ),
+                            dmc.Divider(style={"margin": "10px 0"}),
+                            dmc.Text("Y-Axis Scale", fw="bold"),
+                            dmc.Group([
+                                dmc.RadioGroup(
+                                    id={"type": "y-scale-mode", "index": i},
+                                    value="auto",
+                                    children=[
+                                        dmc.Radio(value="auto", label="Auto"),
+                                        dmc.Radio(value="manual", label="Manual")
+                                    ],
+                                ),
+                            ]),
+                            dmc.Flex([
+                                dmc.NumberInput(
+                                    id={"type": "y-min", "index": i},
+                                    label="Min",
+                                    value=-10,
+                                    style={"width": "45%"},
+                                    allowDecimal=True,
+                                    step=0.1,
+                                    disabled=True
+                                ),
+                                dmc.NumberInput(
+                                    id={"type": "y-max", "index": i},
+                                    label="Max",
+                                    value=10,
+                                    style={"width": "45%"},
+                                    allowDecimal=True,
+                                    step=0.1,
+                                    disabled=True
+                                ),
+                            ], direction='row', justify='space-between', style={"marginBottom": "10px"}),
+                        ]),
+                    ]),
+                ], style={"justifyContent": "space-between"})
+            ], withBorder=True, inheritPadding=True, py='xs'),
+            dmc.CardSection([
+                dcc.Graph(
+                    id={'type': 'signal-graph', 'index': i},
+                    figure={
+                        'data': [go.Scatter(x=[], y=[], mode='lines')],
+                        'layout': go.Layout(
+                            margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                            xaxis={'title': 'Samples'},
+                            yaxis={'title': 'Voltage (V)'},
+                            height=300
+                        )
+                    },
+                    config={'displayModeBar': False}
+                )
+            ], mt='sm')
+        ], withBorder=True, style={"margin": "1px"})
         graphs.append(graph_card)
 
     # WebSocket for data streaming
@@ -155,11 +188,11 @@ def control_streaming(start_clicks, stop_clicks, update_rate):
     
     return ""
 
-# Enable/disable manual Y-axis scale inputs
+# Enable/disable manual Y-axis scale inputs for each plot
 @callback(
-    [Output("y-min", "disabled"),
-     Output("y-max", "disabled")],
-    Input("y-scale-mode", "value")
+    [Output({"type": "y-min", "index": MATCH}, "disabled"),
+     Output({"type": "y-max", "index": MATCH}, "disabled")],
+    Input({"type": "y-scale-mode", "index": MATCH}, "value")
 )
 def toggle_y_scale_inputs(scale_mode):
     """Enable or disable Y-axis min/max inputs based on scale mode"""
