@@ -53,7 +53,8 @@ class DAQDataStreamer:
             try:
                 # Define the data acquisition coroutine
                 async def acquire_data():
-                    samples_per_read = 20  # Read 200 samples at a time for efficiency
+                    # Calculate optimal samples_per_read based on sample rate and update rate
+                    samples_per_read = int(self._daq.sample_rate / self._update_rate)
                     sleep_time = 1.0 / self._update_rate
 
                     while self._streaming:
