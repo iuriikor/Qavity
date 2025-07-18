@@ -76,6 +76,11 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             'subcomponent': 'next_detuning_btn',
             'aio_id': aio_id
         }
+        detuning_index_store = lambda aio_id: {
+            'component': 'CavityDriveAIO',
+            'subcomponent': 'detuning_index_store',
+            'aio_id': aio_id
+        }
         # Hidden component for update callback
         update_status = lambda aio_id: {
             'component': 'CavityDriveAIO',
@@ -145,6 +150,8 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         )
         # Add hidden status div for update callback
         hidden_status = html.Div(id=self.ids.update_status(aio_id), style={'display': 'none'})
+        # Hidden store to track current detuning index
+        detuning_index_store = dcc.Store(id=self.ids.detuning_index_store(aio_id), data=0)
         top_row = dmc.Flex([
             dmc.Text(self.name, size='lg', c='blue'),
             dmc.Chip("Updated", checked=output_is_updated,
@@ -219,7 +226,8 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             control_row,
             # dmc.Divider(mt='xs', mb='xs'),
             hidden_status,
-            config_store
+            config_store,
+            detuning_index_store
         ], withBorder=True, padding='xs', style={'margin': '10px'})
 
         super().__init__(layout)
@@ -281,43 +289,48 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
     @callback(
         Output(ids.end_freq_ctrl(MATCH), 'value', allow_duplicate=True),
         Output(ids.output_updated(MATCH), 'checked', allow_duplicate=True),
+        Output(ids.detuning_index_store(MATCH), 'data', allow_duplicate=True),
         [Input(ids.next_detuning_btn(MATCH), 'n_clicks')],
         [State(ids.detuning_list(MATCH), 'value'),
-         State(ids.cav_tem00_tem01_diff(MATCH), 'value')],
+         State(ids.cav_tem00_tem01_diff(MATCH), 'value'),
+         State(ids.detuning_index_store(MATCH), 'data')],
         prevent_initial_call=True
     )
-    def next_detuning(n_clicks, detuning_list_str, tem00_tem01_spacing):
+    def next_detuning(n_clicks, detuning_list_str, tem00_tem01_spacing, current_index):
         """
         Calculate next detuning frequency and set it to the ramp Final Frequency field.
         Final ramp frequency = TEM00-TEM01 spacing - 100000 + detuning
         """
         if n_clicks is None or not detuning_list_str or tem00_tem01_spacing is None:
-            return no_update, no_update
+            return no_update, no_update, no_update
         
         try:
             # Parse the detuning list from string
             detunings = [float(d.strip()) for d in detuning_list_str.split(',') if d.strip()]
             
             if not detunings:
-                return no_update, no_update
+                return no_update, no_update, no_update
             
-            # Get the first detuning from the list
-            next_detuning = detunings[0]
+            # Get the current index (default to 0 if not set)
+            if current_index is None:
+                current_index = 0
+            
+            # Get the current detuning from the list
+            current_detuning = detunings[current_index % len(detunings)]
             
             # Calculate the final ramp frequency
-            final_freq = tem00_tem01_spacing - 100000 + next_detuning
+            final_freq = tem00_tem01_spacing - 100000 + current_detuning
             
-            # Remove the used detuning from the list (cycle through)
-            remaining_detunings = detunings[1:] + [detunings[0]]
+            # Move to the next index (cycle through)
+            next_index = (current_index + 1) % len(detunings)
             
-            # Update the detuning list (for next time)
-            # This will be handled by updating the textarea value via a separate callback
+            print(f"Next detuning button pressed: using detuning {current_detuning} kHz, final freq = {final_freq} kHz")
             
-            return final_freq, False
+            return final_freq, False, next_index
             
         except (ValueError, IndexError) as e:
             print(f"Error parsing detuning list: {e}")
-            return no_update, no_update
+            return no_update, no_update, no_update
 
     @callback(
         Output(ids.output_updated(MATCH), 'checked', allow_duplicate=True),
