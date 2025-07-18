@@ -132,7 +132,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         self.channel_names = {'A': 'Channel 1', 'B': 'Channel 2', 'C': 'Channel 3', 'D': 'Channel 4'}
 
         # Define the component's layout
-        layout = dmc.Card([])
+        layout = dmc.Card([], withBorder=True, padding='xs', style={'margin': '10px'})
 
         # Picoscope open/close
         pico_openclose = dmc.Flex([

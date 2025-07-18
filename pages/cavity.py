@@ -22,25 +22,32 @@ def layout():
     ])
 
     # Main layout for cavity control page
+    # return dmc.MantineProvider([
+    #     dmc.Container([
+    #         dmc.Title("Cavity Control", order=1, mb="md"),
+    #
+    #         # Cavity drive interface
+    #         dmc.Card([
+    #             dmc.CardSection([
+    #                 dmc.Title("Cavity Drive Control", order=3, mb="sm"),
+    #                 cavity_drive_interface
+    #             ], withBorder=True, inheritPadding=True, py='md')
+    #         ], withBorder=True, mb="md"),
+    #
+    #         # Picoscope interface
+    #         dmc.Card([
+    #             dmc.CardSection([
+    #                 dmc.Title("Picoscope Control", order=3, mb="sm"),
+    #                 pico_interface
+    #             ], withBorder=True, inheritPadding=True, py='md')
+    #         ], withBorder=True, mb="md"),
+    #
+    #     ], size="xl")
+    # ])
+
     return dmc.MantineProvider([
-        dmc.Container([
-            dmc.Title("Cavity Control", order=1, mb="md"),
-            
-            # Cavity drive interface
-            dmc.Card([
-                dmc.CardSection([
-                    dmc.Title("Cavity Drive Control", order=3, mb="sm"),
-                    cavity_drive_interface
-                ], withBorder=True, inheritPadding=True, py='md')
-            ], withBorder=True, mb="md"),
-            
-            # Picoscope interface
-            dmc.Card([
-                dmc.CardSection([
-                    dmc.Title("Picoscope Control", order=3, mb="sm"),
-                    pico_interface
-                ], withBorder=True, inheritPadding=True, py='md')
-            ], withBorder=True, mb="md"),
-            
-        ], size="xl")
+        dmc.Flex([
+            cavity_drive_interface,
+            pico_interface,
+        ], direction='row', wrap='wrap')
     ])

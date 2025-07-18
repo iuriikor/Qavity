@@ -22,12 +22,12 @@ class MirnyRamp(EnvExperiment):
     @kernel
     def run(self):
         # Define scan parameters
-        start_freq_kHz = 440000.0
-        end_freq_kHz = 488800.0
+        start_freq_kHz = 388000.0
+        end_freq_kHz = 388100.0
         # STEP HAS TO ALWAYS BE POSITIVE
         step_kHz = 1.0
         # Delay between steps, seconds
-        step_delay = 0.01
+        step_delay = 0.1
         # Turn off the generator at the end
         turn_off = False
 
@@ -39,10 +39,10 @@ class MirnyRamp(EnvExperiment):
         # This line is crucial to not turn off channel output during device initialization
         # 27 dB is set specifically for my EOM (Cavity setup). Before using this script, check
         # that it does not fry whatever you're driving.
-        self.mirny0_cpld.set_att(0, 27.0 * dB)
+        self.mirny0_cpld.set_att(0, 25.0 * dB)
         delay(50 * us)
         self.mirny0_ch0.init()
-        self.mirny0_ch0.set_att(27.0 * dB)
+        self.mirny0_ch0.set_att(25.0 * dB)
         self.mirny0_ch0.set_frequency(start_freq_kHz * kHz)
 
         #### Turning ON the OUTPUT terminal

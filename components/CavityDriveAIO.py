@@ -118,6 +118,9 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         ramp_freq_step = ramp_props.get('Frequency step kHz', 1)
         ramp_delay = ramp_props.get('Delay seconds', 0.1)
         tem00_tem01_spacing = module_props.get('TEM00 - TEM01 separation kHz', 488457.0)
+
+        detunings_default = [3000, 2000, 1000, 500, 200]
+        detunings_list = module_props.get('List of detunings kHz', detunings_default)
         # Load device-specific properties - I'll leave it here as an idea for future update
 
         # Update device
@@ -184,17 +187,19 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
                             id=self.ids.curr_detuning(aio_id))
         ], justify='space-between', align='flex-end', direction='row')
 
+
         layout=dmc.Card([
             dmc.CardSection(children=top_row, withBorder=True, py="xs", inheritPadding=True),
             # dmc.Divider(mt='sm', mb='sm'),
+            info_row,
+            dmc.Divider(mt='xs', mb='xs'),
             output_row,
             ramp_row,
             control_row,
-            dmc.Divider(mt='xs', mb='xs'),
-            info_row,
+            # dmc.Divider(mt='xs', mb='xs'),
             hidden_status,
             config_store
-        ])
+        ], withBorder=True, padding='xs', style={'margin': '10px'})
 
         super().__init__(layout)
 
@@ -449,7 +454,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             run_artiq_in_clang64_visible(device.freq_ramp_path)
             ramp_starting_freq = device.ramp_params["Starting frequency kHz"]
             ramp_ending_freq = device.ramp_params["Ending frequency kHz"]
-            return [ramp_starting_freq, ramp_ending_freq, True]
+            return [ramp_ending_freq, ramp_ending_freq, True]
 
             # # Swaps the role of starting frequency and ending frequency in case
             # # one wants to immediately scan back
