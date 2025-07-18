@@ -212,8 +212,8 @@ def layout():
         ], direction="row", wrap='wrap'),
     ])
 
-
-# Server-side callbacks - COMMENTED OUT since this page is not active
+#
+# # Server-side callbacks
 # @callback(
 #     Output("ws-daq", "url", allow_duplicate=True),
 #     Input("start-daq-btn", "n_clicks"),
@@ -224,16 +224,16 @@ def layout():
 #     """Start DAQ streaming with the specified sample rate"""
 #     if n_clicks is None:
 #         return dash.no_update
-
+#
 #     # Update sample rate and start streaming
 #     daq_streamer._sampling_rate = sample_rate
 #     daq_streamer.start()
-
+#
 #     # Force WebSocket reconnection with a timestamp
 #     import time
 #     return f"ws://127.0.0.1:5000/daq_stream?t={int(time.time())}"
-
-
+#
+#
 # @callback(
 #     Output("ws-daq", "url", allow_duplicate=True),
 #     Input("stop-daq-btn", "n_clicks"),
@@ -246,8 +246,8 @@ def layout():
 #         # Return a dummy URL to cause the websocket to disconnect
 #         import time
 #         return f"ws://127.0.0.1:5000/daq_stream?stopped={int(time.time())}"
-
-
+#
+#
 # # Enable/disable manual Y-axis scale inputs
 # @callback(
 #     [Output({"type": "y-min", "index": MATCH}, "disabled"),
@@ -257,7 +257,7 @@ def layout():
 # def toggle_y_scale_inputs(scale_mode):
 #     """Enable or disable Y-axis min/max inputs based on scale mode"""
 #     return scale_mode != "manual", scale_mode != "manual"
-
+#
 # # Callback to save monitors configuration
 # @callback(
 #     Output("save-config-status", "children"),
@@ -276,10 +276,10 @@ def layout():
 #                         display_samples, sample_rate, buffer_size, plot_config):
 #     if n_clicks is None:
 #         return dash.no_update, dash.no_update
-
+#
 #     # Get current plot configs
 #     current_plots = plot_config.get("plots", [])
-
+#
 #     # Create new config structure
 #     new_config = {
 #         "global": {
@@ -288,12 +288,12 @@ def layout():
 #         },
 #         "plots": []
 #     }
-
+#
 #     # Build the plots config
 #     for i in range(len(channels)):
 #         # Get the current plot configuration to preserve existing values
 #         current_plot = current_plots[i] if i < len(current_plots) else {}
-
+#
 #         # Preserve width and height (and other properties)
 #         plot_data = {
 #             "title": current_plot.get("title", f"Signal Monitor {i + 1}"),
@@ -307,14 +307,14 @@ def layout():
 #             "height": current_plot.get("height", 300)  # Preserve height
 #         }
 #         new_config["plots"].append(plot_data)
-
+#
 #     # Save the config
 #     from config import save_config
 #     success = save_config(new_config)
-
+#
 #     # Also update the plot-config-store
 #     new_store_data = {"plots": new_config["plots"]}
-
+#
 #     message = dmc.Alert(
 #         "Configuration saved successfully!",
 #         title="Success",
@@ -327,5 +327,5 @@ def layout():
 #         color="red",
 #         withCloseButton=True,
 #     )
-
+#
 #     return message, new_store_data

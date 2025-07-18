@@ -99,16 +99,17 @@
     }
   },
   "Fiber EOM cavity drive": {
-    "Output frequency": 440000,
-    "Output attenuation": 28,
-    "Output on": false,
+    "Output frequency": 388000,
+    "Output attenuation": 25,
+    "Output on": true,
     "TEM00 - TEM01 separation kHz": 488457,
     "Scripts updated": true,
     "Ramp": {
-      "Starting frequency kHz": 440000,
-      "Ending frequency kHz": 488800,
+      "Starting frequency kHz": 388000,
+      "Ending frequency kHz": 388100,
       "Frequency step kHz": 1,
-      "Delay seconds": 0.01
-    }
+      "Delay seconds": 0.1
+    },
+    "List of detunings kHz": [3000, 2000, 1000, 900, 800, 700, 650, 600, 550, 500, 480, 460, 440, 420, 400, 380, 360, 340, 320, 300, 280, 260, 240, 220, 200],
   }
 }

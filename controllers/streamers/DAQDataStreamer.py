@@ -110,7 +110,7 @@ class DAQDataStreamer:
                             current_time = time.time()
 
                             # REVERT TO WORKING FORMAT - but keep smaller data size optimization
-                            samples_per_update = getattr(self, '_samples_per_update', 200)
+                            samples_per_update = getattr(self, '_samples_per_update', 1000)
                             
                             # Count channels with data and prepare data to send
                             channels_to_send = {}
@@ -276,7 +276,7 @@ class DAQDataStreamer:
         self._update_rate = update_rate
         self._max_samples_per_channel = max_samples
         # New approach: send only recent samples per update instead of entire buffer
-        self._samples_per_update = min(200, max_samples // 10)  # Send ~10% of buffer or 200 samples max
+        self._samples_per_update = min(1000, max_samples // 5)  # Send ~20% of buffer or 200 samples max
         self._logger.info(f"Data reduction settings: samples_per_update={self._samples_per_update}, update_rate={update_rate}Hz")
     
     def get_timing_stats(self):

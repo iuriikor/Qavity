@@ -65,8 +65,8 @@ valve_ports = {"Pump": 1,
 valve_control_board = RelayBoard(comport='COM6', output_ports=valve_ports)
 
 # DAQ CARDS
-daq_sampling_rate = 100
-daq_update_rate = 5
+daq_sampling_rate = 200
+daq_update_rate = 10
 
 daq_card = cDAQ9174()
 # Configure DAQ with actual channels
