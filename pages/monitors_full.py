@@ -213,119 +213,119 @@ def layout():
     ])
 
 
-# Server-side callbacks
-@callback(
-    Output("ws-daq", "url", allow_duplicate=True),
-    Input("start-daq-btn", "n_clicks"),
-    Input("sample-rate-input", "value"),
-    prevent_initial_call=True
-)
-def start_daq_streaming(n_clicks, sample_rate):
-    """Start DAQ streaming with the specified sample rate"""
-    if n_clicks is None:
-        return dash.no_update
+# Server-side callbacks - COMMENTED OUT since this page is not active
+# @callback(
+#     Output("ws-daq", "url", allow_duplicate=True),
+#     Input("start-daq-btn", "n_clicks"),
+#     Input("sample-rate-input", "value"),
+#     prevent_initial_call=True
+# )
+# def start_daq_streaming(n_clicks, sample_rate):
+#     """Start DAQ streaming with the specified sample rate"""
+#     if n_clicks is None:
+#         return dash.no_update
 
-    # Update sample rate and start streaming
-    daq_streamer._sampling_rate = sample_rate
-    daq_streamer.start()
+#     # Update sample rate and start streaming
+#     daq_streamer._sampling_rate = sample_rate
+#     daq_streamer.start()
 
-    # Force WebSocket reconnection with a timestamp
-    import time
-    return f"ws://127.0.0.1:5000/daq_stream?t={int(time.time())}"
-
-
-@callback(
-    Output("ws-daq", "url", allow_duplicate=True),
-    Input("stop-daq-btn", "n_clicks"),
-    prevent_initial_call=True
-)
-def stop_daq_streaming(n_clicks):
-    """Stop DAQ streaming"""
-    if n_clicks:
-        daq_streamer.stop()
-        # Return a dummy URL to cause the websocket to disconnect
-        import time
-        return f"ws://127.0.0.1:5000/daq_stream?stopped={int(time.time())}"
+#     # Force WebSocket reconnection with a timestamp
+#     import time
+#     return f"ws://127.0.0.1:5000/daq_stream?t={int(time.time())}"
 
 
-# Enable/disable manual Y-axis scale inputs
-@callback(
-    [Output({"type": "y-min", "index": MATCH}, "disabled"),
-     Output({"type": "y-max", "index": MATCH}, "disabled")],
-    Input({"type": "y-scale-mode", "index": MATCH}, "value")
-)
-def toggle_y_scale_inputs(scale_mode):
-    """Enable or disable Y-axis min/max inputs based on scale mode"""
-    return scale_mode != "manual", scale_mode != "manual"
+# @callback(
+#     Output("ws-daq", "url", allow_duplicate=True),
+#     Input("stop-daq-btn", "n_clicks"),
+#     prevent_initial_call=True
+# )
+# def stop_daq_streaming(n_clicks):
+#     """Stop DAQ streaming"""
+#     if n_clicks:
+#         daq_streamer.stop()
+#         # Return a dummy URL to cause the websocket to disconnect
+#         import time
+#         return f"ws://127.0.0.1:5000/daq_stream?stopped={int(time.time())}"
 
-# Callback to save monitors configuration
-@callback(
-    Output("save-config-status", "children"),
-    Output("plot-config-store", "data"),
-    [Input("save-config-btn", "n_clicks")],
-    [State({"type": "channel-selector", "index": ALL}, "value"),
-     State({"type": "y-scale-mode", "index": ALL}, "value"),
-     State({"type": "y-min", "index": ALL}, "value"),
-     State({"type": "y-max", "index": ALL}, "value"),
-     State({"type": "display-samples", "index": ALL}, "value"),
-     State("sample-rate-input", "value"),
-     State("buffer-size-select", "value"),
-     State("plot-config-store", "data")]
-)
-def save_current_config(n_clicks, channels, y_scale_modes, y_mins, y_maxs,
-                        display_samples, sample_rate, buffer_size, plot_config):
-    if n_clicks is None:
-        return dash.no_update, dash.no_update
 
-    # Get current plot configs
-    current_plots = plot_config.get("plots", [])
+# # Enable/disable manual Y-axis scale inputs
+# @callback(
+#     [Output({"type": "y-min", "index": MATCH}, "disabled"),
+#      Output({"type": "y-max", "index": MATCH}, "disabled")],
+#     Input({"type": "y-scale-mode", "index": MATCH}, "value")
+# )
+# def toggle_y_scale_inputs(scale_mode):
+#     """Enable or disable Y-axis min/max inputs based on scale mode"""
+#     return scale_mode != "manual", scale_mode != "manual"
 
-    # Create new config structure
-    new_config = {
-        "global": {
-            "buffer_size": buffer_size,
-            "sample_rate": sample_rate
-        },
-        "plots": []
-    }
+# # Callback to save monitors configuration
+# @callback(
+#     Output("save-config-status", "children"),
+#     Output("plot-config-store", "data"),
+#     [Input("save-config-btn", "n_clicks")],
+#     [State({"type": "channel-selector", "index": ALL}, "value"),
+#      State({"type": "y-scale-mode", "index": ALL}, "value"),
+#      State({"type": "y-min", "index": ALL}, "value"),
+#      State({"type": "y-max", "index": ALL}, "value"),
+#      State({"type": "display-samples", "index": ALL}, "value"),
+#      State("sample-rate-input", "value"),
+#      State("buffer-size-select", "value"),
+#      State("plot-config-store", "data")]
+# )
+# def save_current_config(n_clicks, channels, y_scale_modes, y_mins, y_maxs,
+#                         display_samples, sample_rate, buffer_size, plot_config):
+#     if n_clicks is None:
+#         return dash.no_update, dash.no_update
 
-    # Build the plots config
-    for i in range(len(channels)):
-        # Get the current plot configuration to preserve existing values
-        current_plot = current_plots[i] if i < len(current_plots) else {}
+#     # Get current plot configs
+#     current_plots = plot_config.get("plots", [])
 
-        # Preserve width and height (and other properties)
-        plot_data = {
-            "title": current_plot.get("title", f"Signal Monitor {i + 1}"),
-            "channels": channels[i] if channels[i] else [],
-            "legend_strings": current_plot.get("legend_strings", []),
-            "y_scale_mode": y_scale_modes[i],
-            "y_min": y_mins[i],
-            "y_max": y_maxs[i],
-            "display_samples": display_samples[i],
-            "width": current_plot.get("width", 800),  # Preserve width
-            "height": current_plot.get("height", 300)  # Preserve height
-        }
-        new_config["plots"].append(plot_data)
+#     # Create new config structure
+#     new_config = {
+#         "global": {
+#             "buffer_size": buffer_size,
+#             "sample_rate": sample_rate
+#         },
+#         "plots": []
+#     }
 
-    # Save the config
-    from config import save_config
-    success = save_config(new_config)
+#     # Build the plots config
+#     for i in range(len(channels)):
+#         # Get the current plot configuration to preserve existing values
+#         current_plot = current_plots[i] if i < len(current_plots) else {}
 
-    # Also update the plot-config-store
-    new_store_data = {"plots": new_config["plots"]}
+#         # Preserve width and height (and other properties)
+#         plot_data = {
+#             "title": current_plot.get("title", f"Signal Monitor {i + 1}"),
+#             "channels": channels[i] if channels[i] else [],
+#             "legend_strings": current_plot.get("legend_strings", []),
+#             "y_scale_mode": y_scale_modes[i],
+#             "y_min": y_mins[i],
+#             "y_max": y_maxs[i],
+#             "display_samples": display_samples[i],
+#             "width": current_plot.get("width", 800),  # Preserve width
+#             "height": current_plot.get("height", 300)  # Preserve height
+#         }
+#         new_config["plots"].append(plot_data)
 
-    message = dmc.Alert(
-        "Configuration saved successfully!",
-        title="Success",
-        color="green",
-        withCloseButton=True,
-        duration=3000,
-    ) if success else dmc.Alert(
-        "Error saving configuration.",
-        title="Error",
-        color="red",
-        withCloseButton=True,
-    )
+#     # Save the config
+#     from config import save_config
+#     success = save_config(new_config)
 
-    return message, new_store_data
+#     # Also update the plot-config-store
+#     new_store_data = {"plots": new_config["plots"]}
+
+#     message = dmc.Alert(
+#         "Configuration saved successfully!",
+#         title="Success",
+#         color="green",
+#         withCloseButton=True,
+#         duration=3000,
+#     ) if success else dmc.Alert(
+#         "Error saving configuration.",
+#         title="Error",
+#         color="red",
+#         withCloseButton=True,
+#     )
+
+#     return message, new_store_data
