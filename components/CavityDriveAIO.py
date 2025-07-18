@@ -87,6 +87,11 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             'subcomponent': 'update_status',
             'aio_id': aio_id
         }
+        estimated_time = lambda aio_id: {
+            'component': 'CavityDriveAIO',
+            'subcomponent': 'estimated_time',
+            'aio_id': aio_id
+        }
         # Storage to keep device properties
         module_props_store = lambda aio_id: {
             'component': 'CavityDriveAIO',
@@ -191,8 +196,9 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         ], direction='row', justify='space-between', align='flex-end')
         control_row = dmc.Flex([
             dmc.Button('Ramp', id=self.ids.scan_freq_btn(aio_id)),
+            dmc.Text("Est. time: 0 s", size='sm', c='dimmed', id=self.ids.estimated_time(aio_id)),
             dmc.Button('Single tone', id=self.ids.constant_output_btn(aio_id)),
-        ], justify='center', align='flex-end', direction='row', py='xs', gap='xl')
+        ], justify='space-between', align='flex-end', direction='row', py='xs')
         info_row = dmc.Flex([
             dmc.NumberInput(value=tem00_tem01_spacing, label='TEM01-TEM00 spacing', suffix=' kHz',
                             w=150, debounce=True, radius=3, allowDecimal=True, decimalScale=2,
@@ -284,6 +290,45 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         # Apply the detuning formula
         detuning = current_freq - tem00_tem01_spacing + 100000
         return round(detuning, 1)
+    
+    # Callback to calculate and display estimated ramp time
+    @callback(
+        Output(ids.estimated_time(MATCH), 'children'),
+        [Input(ids.curr_freq_ctrl(MATCH), 'value'),
+         Input(ids.end_freq_ctrl(MATCH), 'value'),
+         Input(ids.freq_step_ctrl(MATCH), 'value'),
+         Input(ids.freq_step_delay_ctrl(MATCH), 'value')],
+        prevent_initial_call=True
+    )
+    def update_estimated_time(current_freq, final_freq, step_size, step_delay):
+        """
+        Calculate estimated ramp time based on:
+        Time = |Final frequency - Current frequency| / Step size * Step delay
+        """
+        if any(x is None for x in [current_freq, final_freq, step_size, step_delay]):
+            return "Est. time: -- s"
+        
+        if step_size == 0:
+            return "Est. time: -- s"
+        
+        try:
+            # Calculate the estimated time
+            freq_diff = abs(final_freq - current_freq)
+            num_steps = freq_diff / step_size
+            estimated_time = num_steps * step_delay
+            
+            # Format the time nicely
+            if estimated_time < 60:
+                return f"Est. time: {estimated_time:.1f} s"
+            elif estimated_time < 3600:
+                minutes = estimated_time / 60
+                return f"Est. time: {minutes:.1f} min"
+            else:
+                hours = estimated_time / 3600
+                return f"Est. time: {hours:.1f} h"
+                
+        except (ValueError, ZeroDivisionError):
+            return "Est. time: -- s"
     
     # Callback for "Next detuning" button
     @callback(
