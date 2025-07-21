@@ -508,9 +508,6 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         device = PicoscopeInterfaceAIO._devices[aio_id]
         
         if comments is not None and current_config and device.get_name() in current_config:
-            # Debug: Check what we receive
-            print(f"DEBUG: comments type: {type(comments)}, value: {comments}")
-            
             # Parse the JSON string to ensure it's a valid Python object
             try:
                 # JsonInput in Dash Mantine returns the parsed object, not a string
@@ -519,8 +516,6 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
                 else:
                     # It's already a parsed object (dict)
                     comments_obj = comments
-                    
-                print(f"DEBUG: comments_obj type: {type(comments_obj)}, value: {comments_obj}")
                     
                 # Update the config data with the parsed object (not the string)
                 current_config[device.get_name()]['Comments'] = comments_obj
@@ -626,17 +621,12 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
             device_config = current_config[device_name]
             
             # Parse comments if it's a JSON string
-            print(f"DEBUG STREAM: comments type: {type(comments)}, value: {comments}")
             comments_obj = comments
             if isinstance(comments, str):
                 try:
                     comments_obj = json.loads(comments)
-                    print(f"DEBUG STREAM: parsed to object: {comments_obj}")
                 except json.JSONDecodeError:
-                    print(f"DEBUG STREAM: keeping as string due to JSON error")
                     comments_obj = comments  # Keep as string if invalid JSON
-            else:
-                print(f"DEBUG STREAM: already an object: {comments_obj}")
             
             device_config.update({
                 'sampling_frequency': str(freq_set),
@@ -724,17 +714,12 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
             device_config = current_config[device_name]
             
             # Parse comments if it's a JSON string
-            print(f"DEBUG STREAM: comments type: {type(comments)}, value: {comments}")
             comments_obj = comments
             if isinstance(comments, str):
                 try:
                     comments_obj = json.loads(comments)
-                    print(f"DEBUG STREAM: parsed to object: {comments_obj}")
                 except json.JSONDecodeError:
-                    print(f"DEBUG STREAM: keeping as string due to JSON error")
                     comments_obj = comments  # Keep as string if invalid JSON
-            else:
-                print(f"DEBUG STREAM: already an object: {comments_obj}")
             
             device_config.update({
                 'sampling_frequency': str(freq_set),
