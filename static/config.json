@@ -71,10 +71,7 @@
     "sampling_frequency": "1",
     "acquisition_time": "10",
     "resolution": "12",
-    "Comments": {
-      "experiment": "default experiment",
-      "notes": "initial setup"
-    },
+    "Comments": {"experiment": "default experiment", "notes": "initial setup"},
     "channels": {
       "A": {
         "enabled": "True",
@@ -103,18 +100,18 @@
     }
   },
   "Fiber EOM cavity drive": {
-    "Output frequency": 388000,
+    "Output frequency": 390457,
     "Output attenuation": 25,
     "Output on": true,
     "TEM00 - TEM01 separation kHz": 488457,
-    "Current detuning kHz": -457.0,
-    "Target detuning kHz": 1000.0,
+    "Current detuning kHz": 2000,
+    "Target detuning kHz": 2000,
     "Scripts updated": true,
     "Ramp": {
-      "Starting frequency kHz": 388000,
-      "Ending frequency kHz": 388100,
-      "Frequency step kHz": 1,
-      "Delay seconds": 0.1
+      "Starting frequency kHz": 390457,
+      "Ending frequency kHz": 390457,
+      "Frequency step kHz": 10,
+      "Delay seconds": 0.01
     }
   }
 }

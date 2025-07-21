@@ -250,6 +250,8 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
             value=json.dumps(self.default_comments) if self.default_comments else "{}",
             w=400,
             debounce=True,
+            autosize=True,
+            minRows=5,
             id=self.ids.data_comments(aio_id)
         )
 
