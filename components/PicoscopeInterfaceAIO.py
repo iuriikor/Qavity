@@ -482,9 +482,18 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         prevent_initial_call=False
     )
     def update_config_metadata_store(pico_config):
-        # Get the full config and filter out global and plots
+        aio_id = PicoscopeInterfaceAIO.get_aio_id_from_trigger() if callback_context.triggered else None
+        
+        # Get the full config and filter out global, plots, and this picoscope's own config
         full_config = config.copy()
-        filtered_config = {k: v for k, v in full_config.items() if k not in ['global', 'plots']}
+        excluded_keys = ['global', 'plots']
+        
+        # Also exclude this picoscope's own config from metadata
+        if aio_id and aio_id in PicoscopeInterfaceAIO._devices:
+            device = PicoscopeInterfaceAIO._devices[aio_id]
+            excluded_keys.append(device.get_name())
+        
+        filtered_config = {k: v for k, v in full_config.items() if k not in excluded_keys}
         return filtered_config
     
     # Callback to save comments to config file
@@ -499,11 +508,29 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         device = PicoscopeInterfaceAIO._devices[aio_id]
         
         if comments is not None and current_config and device.get_name() in current_config:
-            # Update the config data
-            current_config[device.get_name()]['Comments'] = comments
+            # Debug: Check what we receive
+            print(f"DEBUG: comments type: {type(comments)}, value: {comments}")
             
-            # Save to config file
-            update_config({device.get_name(): current_config[device.get_name()]})
+            # Parse the JSON string to ensure it's a valid Python object
+            try:
+                # JsonInput in Dash Mantine returns the parsed object, not a string
+                if isinstance(comments, str):
+                    comments_obj = json.loads(comments)
+                else:
+                    # It's already a parsed object (dict)
+                    comments_obj = comments
+                    
+                print(f"DEBUG: comments_obj type: {type(comments_obj)}, value: {comments_obj}")
+                    
+                # Update the config data with the parsed object (not the string)
+                current_config[device.get_name()]['Comments'] = comments_obj
+                
+                # Save to config file
+                update_config({device.get_name(): current_config[device.get_name()]})
+            except json.JSONDecodeError:
+                print(f"Invalid JSON format in comments: {comments}")
+            except Exception as e:
+                print(f"Error processing comments: {e}")
         
         return current_config
     
@@ -597,13 +624,27 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         device_name = device.get_name()
         if device_name in current_config:
             device_config = current_config[device_name]
+            
+            # Parse comments if it's a JSON string
+            print(f"DEBUG STREAM: comments type: {type(comments)}, value: {comments}")
+            comments_obj = comments
+            if isinstance(comments, str):
+                try:
+                    comments_obj = json.loads(comments)
+                    print(f"DEBUG STREAM: parsed to object: {comments_obj}")
+                except json.JSONDecodeError:
+                    print(f"DEBUG STREAM: keeping as string due to JSON error")
+                    comments_obj = comments  # Keep as string if invalid JSON
+            else:
+                print(f"DEBUG STREAM: already an object: {comments_obj}")
+            
             device_config.update({
                 'sampling_frequency': str(freq_set),
                 'acquisition_time': str(acq_time),
                 'resolution': str(resolution),
                 'data_path': data_path,
                 'measurement_set_name': measurement_name,
-                'Comments': comments
+                'Comments': comments_obj
             })
             
             # Update channel configs
@@ -623,7 +664,14 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         # Prepare metadata including comments and all config data
         metadata = {}
         if comments:
-            metadata['comments'] = comments
+            # Parse comments for metadata
+            if isinstance(comments, str):
+                try:
+                    metadata['comments'] = json.loads(comments)
+                except json.JSONDecodeError:
+                    metadata['comments'] = comments
+            else:
+                metadata['comments'] = comments
         
         # Add all config data except global and plots
         if all_config_metadata:
@@ -674,13 +722,27 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         device_name = device.get_name()
         if device_name in current_config:
             device_config = current_config[device_name]
+            
+            # Parse comments if it's a JSON string
+            print(f"DEBUG STREAM: comments type: {type(comments)}, value: {comments}")
+            comments_obj = comments
+            if isinstance(comments, str):
+                try:
+                    comments_obj = json.loads(comments)
+                    print(f"DEBUG STREAM: parsed to object: {comments_obj}")
+                except json.JSONDecodeError:
+                    print(f"DEBUG STREAM: keeping as string due to JSON error")
+                    comments_obj = comments  # Keep as string if invalid JSON
+            else:
+                print(f"DEBUG STREAM: already an object: {comments_obj}")
+            
             device_config.update({
                 'sampling_frequency': str(freq_set),
                 'acquisition_time': str(acq_time),
                 'resolution': str(resolution),
                 'data_path': data_path,
                 'measurement_set_name': measurement_name,
-                'Comments': comments
+                'Comments': comments_obj
             })
             
             # Update channel configs
@@ -700,7 +762,14 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         # Prepare metadata including comments and all config data
         metadata = {}
         if comments:
-            metadata['comments'] = comments
+            # Parse comments for metadata
+            if isinstance(comments, str):
+                try:
+                    metadata['comments'] = json.loads(comments)
+                except json.JSONDecodeError:
+                    metadata['comments'] = comments
+            else:
+                metadata['comments'] = comments
         
         # Add all config data except global and plots
         if all_config_metadata:
