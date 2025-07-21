@@ -71,6 +71,10 @@
     "sampling_frequency": "1",
     "acquisition_time": "10",
     "resolution": "12",
+    "Comments": {
+      "experiment": "default experiment",
+      "notes": "initial setup"
+    },
     "channels": {
       "A": {
         "enabled": "True",

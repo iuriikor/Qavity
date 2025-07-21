@@ -3,7 +3,7 @@ import uuid
 import json
 import dash_core_components as dcc
 import dash_mantine_components as dmc
-from config import config  # Import the config
+from config import config, update_config  # Import the config
 
 from controllers.picoscope.ps5000a_wrapper import PicoInterface
 
@@ -91,6 +91,11 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
             'subcomponent': 'data_comments',
             'aio_id': aio_id
         }
+        config_metadata_store = lambda aio_id: {
+            'component': 'PicoscopeInterfaceAIO',
+            'subcomponent': 'config_metadata_store',
+            'aio_id': aio_id
+        }
 
     # Class level storage for device instances
     # Maps aio_id to device
@@ -125,6 +130,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         self.default_data_path = self.pico_config.get('data_path', 'C:/')
         self.default_msmt_name = self.pico_config.get('measurement_set_name', 'none')
         self.default_channel_props = self.pico_config.get('channels', {})
+        self.default_comments = self.pico_config.get('Comments', {})
 
         # Channel configuration
         self.channels = ['A', 'B', 'C', 'D']
@@ -151,6 +157,12 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         config_store = dcc.Store(
             id=self.ids.config_storage(aio_id),
             data={self._device.get_name(): self.pico_config},
+        )
+        
+        # Config metadata store for passing all config except global/plots
+        config_metadata_store = dcc.Store(
+            id=self.ids.config_metadata_store(aio_id),
+            data={}
         )
 
         # Data saving section
@@ -229,11 +241,13 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         # Create channel controls dynamically
         channel_params = self._create_channel_controls()
 
-        # Create field to include comment into the metadata
-        comment_field = dmc.Textarea(
-            placeholder="Additional comments",
-            label="Additional comments",
-            size="md",
+        # Create field to include comment into the metadata using JSON input
+        comment_field = dmc.JsonInput(
+            placeholder='{"experiment": "description", "notes": "additional info"}',
+            label="Comments (JSON format)",
+            validationError="Invalid JSON format",
+            formatOnBlur=True,
+            value=self.default_comments,
             w=400,
             debounce=True,
             id=self.ids.data_comments(aio_id)
@@ -251,7 +265,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         ], direction='row', align='flex-end', justify='space-between')
 
         layout.children = [
-            config_store, top_bar, data_path, sampling_params,
+            config_store, config_metadata_store, top_bar, data_path, sampling_params,
             channel_params, dmc.Divider(mt='sm', mb='sm'), comment_field,
             dmc.Divider(mt='sm', mb='sm'), controls
         ]
@@ -458,6 +472,57 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
                 current_config[device.get_name()]['resolution'] = str(resolution)
 
         return current_config
+    
+    # Callback to update config metadata store with all config data except global/plots
+    @callback(
+        Output(ids.config_metadata_store(MATCH), 'data'),
+        Input(ids.config_storage(MATCH), 'data'),  # Trigger when config changes
+        prevent_initial_call=False
+    )
+    def update_config_metadata_store(pico_config):
+        # Get the full config and filter out global and plots
+        full_config = config.copy()
+        filtered_config = {k: v for k, v in full_config.items() if k not in ['global', 'plots']}
+        return filtered_config
+    
+    # Callback to save comments to config file
+    @callback(
+        Output(ids.config_storage(MATCH), 'data', allow_duplicate=True),
+        Input(ids.data_comments(MATCH), 'value'),
+        State(ids.config_storage(MATCH), 'data'),
+        prevent_initial_call=True
+    )
+    def update_comments_config(comments, current_config):
+        aio_id = PicoscopeInterfaceAIO.get_aio_id_from_trigger()
+        device = PicoscopeInterfaceAIO._devices[aio_id]
+        
+        if comments is not None and current_config and device.get_name() in current_config:
+            # Update the config data
+            current_config[device.get_name()]['Comments'] = comments
+            
+            # Save to config file
+            update_config({device.get_name(): current_config[device.get_name()]})
+        
+        return current_config
+    
+    @staticmethod
+    def update_config_with_current_params(aio_id, current_config):
+        """Helper function to update config with current interface parameters"""
+        device = PicoscopeInterfaceAIO._devices[aio_id]
+        device_name = device.get_name()
+        
+        if device_name not in current_config:
+            current_config[device_name] = {}
+            
+        # Update with current values from the interface
+        # Note: This would need to be called with actual current values from the interface
+        # For now, we'll update what we can access from the device
+        device_config = current_config[device_name]
+        
+        # Save to config file
+        update_config({device_name: device_config})
+        
+        return current_config
 
     # Sampling frequency callback
     @callback(
@@ -503,21 +568,64 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
 
     # Start streaming callback
     @callback(
-        Output(ids.start_stream_btn(MATCH), 'children', allow_duplicate=True),
+        [Output(ids.start_stream_btn(MATCH), 'children', allow_duplicate=True),
+         Output(ids.config_storage(MATCH), 'data', allow_duplicate=True)],
         [Input(ids.start_stream_btn(MATCH), 'n_clicks')],
         [State(ids.data_path(MATCH), 'value'),
          State(ids.measurement_name(MATCH), 'value'),
-         State(ids.data_comments(MATCH),'value')],
+         State(ids.data_comments(MATCH), 'value'),
+         State(ids.config_metadata_store(MATCH), 'data'),
+         State(ids.config_storage(MATCH), 'data'),
+         State(ids.sampling_frequency_set(MATCH), 'value'),
+         State(ids.acq_time_set(MATCH), 'value'),
+         State(ids.resolution(MATCH), 'value'),
+         State({'component': 'PicoscopeInterfaceAIO', 'subcomponent': 'channel_onoff', 'channel': ALL, 'aio_id': MATCH}, 'checked'),
+         State({'component': 'PicoscopeInterfaceAIO', 'subcomponent': 'channel_range', 'channel': ALL, 'aio_id': MATCH}, 'value')],
         prevent_initial_call=True
     )
-    def start_streaming(n_clicks, data_path, measurement_name, comments):
+    def start_streaming(n_clicks, data_path, measurement_name, comments, all_config_metadata, 
+                       current_config, freq_set, acq_time, resolution, channel_states, range_values):
         if n_clicks is None:
-            return 'Stream'
+            return 'Stream', current_config
 
         aio_id = PicoscopeInterfaceAIO.get_aio_id_from_trigger()
         device = PicoscopeInterfaceAIO._devices[aio_id]
-        metadata={}
-        metadata['comments'] = comments
+        
+        # Update config with current parameters
+        device_name = device.get_name()
+        if device_name in current_config:
+            device_config = current_config[device_name]
+            device_config.update({
+                'sampling_frequency': str(freq_set),
+                'acquisition_time': str(acq_time),
+                'resolution': str(resolution),
+                'data_path': data_path,
+                'measurement_set_name': measurement_name,
+                'Comments': comments
+            })
+            
+            # Update channel configs
+            if 'channels' not in device_config:
+                device_config['channels'] = {}
+            channels = ['A', 'B', 'C', 'D']
+            for i, channel in enumerate(channels):
+                if i < len(channel_states) and i < len(range_values):
+                    device_config['channels'][channel] = {
+                        'enabled': str(channel_states[i]),
+                        'range': str(range_values[i]) if range_values[i] else '5'
+                    }
+            
+            # Save to config file
+            update_config({device_name: device_config})
+        
+        # Prepare metadata including comments and all config data
+        metadata = {}
+        if comments:
+            metadata['comments'] = comments
+        
+        # Add all config data except global and plots
+        if all_config_metadata:
+            metadata.update(all_config_metadata)
 
         print(f"Starting streaming acquisition...")
         result = device.run_streaming(
@@ -529,29 +637,72 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
 
         if result is not None or (data_path and measurement_name):
             print("Streaming completed successfully")
-            return 'Stream Complete'
+            return 'Stream Complete', current_config
         else:
             print("Streaming failed")
-            return 'Stream Failed'
+            return 'Stream Failed', current_config
 
     # Arm trigger callback
     @callback(
-        Output(ids.arm_trigger_btn(MATCH), 'children', allow_duplicate=True),
+        [Output(ids.arm_trigger_btn(MATCH), 'children', allow_duplicate=True),
+         Output(ids.config_storage(MATCH), 'data', allow_duplicate=True)],
         [Input(ids.arm_trigger_btn(MATCH), 'n_clicks')],
         [State(ids.data_path(MATCH), 'value'),
          State(ids.measurement_name(MATCH), 'value'),
          State(ids.chunks_input(MATCH), 'value'),
-         State(ids.data_comments(MATCH),'value')],
+         State(ids.data_comments(MATCH), 'value'),
+         State(ids.config_metadata_store(MATCH), 'data'),
+         State(ids.config_storage(MATCH), 'data'),
+         State(ids.sampling_frequency_set(MATCH), 'value'),
+         State(ids.acq_time_set(MATCH), 'value'),
+         State(ids.resolution(MATCH), 'value'),
+         State({'component': 'PicoscopeInterfaceAIO', 'subcomponent': 'channel_onoff', 'channel': ALL, 'aio_id': MATCH}, 'checked'),
+         State({'component': 'PicoscopeInterfaceAIO', 'subcomponent': 'channel_range', 'channel': ALL, 'aio_id': MATCH}, 'value')],
         prevent_initial_call=True
     )
-    def arm_trigger(n_clicks, data_path, measurement_name, num_chunks, comments):
+    def arm_trigger(n_clicks, data_path, measurement_name, num_chunks, comments, all_config_metadata,
+                   current_config, freq_set, acq_time, resolution, channel_states, range_values):
         if n_clicks is None:
-            return 'Arm trigger'
+            return 'Arm trigger', current_config
 
         aio_id = PicoscopeInterfaceAIO.get_aio_id_from_trigger()
         device = PicoscopeInterfaceAIO._devices[aio_id]
+        
+        # Update config with current parameters
+        device_name = device.get_name()
+        if device_name in current_config:
+            device_config = current_config[device_name]
+            device_config.update({
+                'sampling_frequency': str(freq_set),
+                'acquisition_time': str(acq_time),
+                'resolution': str(resolution),
+                'data_path': data_path,
+                'measurement_set_name': measurement_name,
+                'Comments': comments
+            })
+            
+            # Update channel configs
+            if 'channels' not in device_config:
+                device_config['channels'] = {}
+            channels = ['A', 'B', 'C', 'D']
+            for i, channel in enumerate(channels):
+                if i < len(channel_states) and i < len(range_values):
+                    device_config['channels'][channel] = {
+                        'enabled': str(channel_states[i]),
+                        'range': str(range_values[i]) if range_values[i] else '5'
+                    }
+            
+            # Save to config file
+            update_config({device_name: device_config})
+        
+        # Prepare metadata including comments and all config data
         metadata = {}
-        metadata['comments'] = comments
+        if comments:
+            metadata['comments'] = comments
+        
+        # Add all config data except global and plots
+        if all_config_metadata:
+            metadata.update(all_config_metadata)
 
         if num_chunks is None or num_chunks < 1:
             num_chunks = 1
@@ -568,6 +719,6 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         )
 
         if success:
-            return f'{num_chunks} Triggers Complete'
+            return f'{num_chunks} Triggers Complete', current_config
         else:
-            return 'Multi-Trigger Failed'
+            return 'Multi-Trigger Failed', current_config
