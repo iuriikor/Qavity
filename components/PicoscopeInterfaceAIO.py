@@ -247,7 +247,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
             label="Comments (JSON format)",
             validationError="Invalid JSON format",
             formatOnBlur=True,
-            value=self.default_comments,
+            value=json.dumps(self.default_comments) if self.default_comments else "{}",
             w=400,
             debounce=True,
             id=self.ids.data_comments(aio_id)
