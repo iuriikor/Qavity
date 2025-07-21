@@ -104,13 +104,13 @@
     "Output on": true,
     "TEM00 - TEM01 separation kHz": 488457,
     "Current detuning kHz": -457.0,
+    "Target detuning kHz": 1000.0,
     "Scripts updated": true,
     "Ramp": {
       "Starting frequency kHz": 388000,
       "Ending frequency kHz": 388100,
       "Frequency step kHz": 1,
       "Delay seconds": 0.1
-    },
-    "List of detunings kHz": [3000, 2000, 1000, 900, 800, 700, 650, 600, 550, 500, 480, 460, 440, 420, 400, 380, 360, 340, 320, 300, 280, 260, 240, 220, 200]
+    }
   }
 }

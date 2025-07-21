@@ -66,19 +66,14 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             'subcomponent': 'curr_detuning',
             'aio_id': aio_id
         }
-        detuning_list = lambda aio_id: {
+        target_detuning = lambda aio_id: {
             'component': 'CavityDriveAIO',
-            'subcomponent': 'detuning_list',
+            'subcomponent': 'target_detuning',
             'aio_id': aio_id
         }
-        next_detuning_btn = lambda aio_id: {
+        set_detuning_btn = lambda aio_id: {
             'component': 'CavityDriveAIO',
-            'subcomponent': 'next_detuning_btn',
-            'aio_id': aio_id
-        }
-        detuning_index_store = lambda aio_id: {
-            'component': 'CavityDriveAIO',
-            'subcomponent': 'detuning_index_store',
+            'subcomponent': 'set_detuning_btn',
             'aio_id': aio_id
         }
         # Hidden component for update callback
@@ -139,9 +134,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         ramp_delay = ramp_props.get('Delay seconds', 0.1)
         tem00_tem01_spacing = module_props.get('TEM00 - TEM01 separation kHz', 488457.0)
         current_detuning = module_props.get('Current detuning kHz', 0.0)
-
-        detunings_default = [3000, 2000, 1000, 500, 200]
-        detunings_list = module_props.get('List of detunings kHz', detunings_default)
+        target_detuning_value = module_props.get('Target detuning kHz', 1000.0)
         # Load device-specific properties - I'll leave it here as an idea for future update
 
         # Update device
@@ -155,8 +148,6 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         )
         # Add hidden status div for update callback
         hidden_status = html.Div(id=self.ids.update_status(aio_id), style={'display': 'none'})
-        # Hidden store to track current detuning index
-        detuning_index_store = dcc.Store(id=self.ids.detuning_index_store(aio_id), data=0)
         top_row = dmc.Flex([
             dmc.Text(self.name, size='lg', c='blue'),
             dmc.Chip("Updated", checked=output_is_updated,
@@ -212,12 +203,12 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         ], justify='space-between', align='flex-end', direction='row')
         
         detuning_row = dmc.Flex([
-            dmc.Textarea(value=', '.join(map(str, detunings_list)), label='Detunings List (kHz)',
-                         w=250, radius=3, autosize=True, minRows=1, maxRows=3,
-                         persistence=1, persistence_type='local',
-                         id=self.ids.detuning_list(aio_id)),
-            dmc.Button('Next detuning', size='sm', 
-                       id=self.ids.next_detuning_btn(aio_id))
+            dmc.NumberInput(value=target_detuning_value, label='Target Detuning', suffix=' kHz',
+                           w=150, radius=3, allowDecimal=True, decimalScale=1,
+                           persistence=1, persistence_type='local',
+                           id=self.ids.target_detuning(aio_id)),
+            dmc.Button('Set detuning', size='sm', 
+                       id=self.ids.set_detuning_btn(aio_id))
         ], justify='space-between', align='flex-end', direction='row', gap='sm')
 
 
@@ -232,8 +223,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             control_row,
             # dmc.Divider(mt='xs', mb='xs'),
             hidden_status,
-            config_store,
-            detuning_index_store
+            config_store
         ], withBorder=True, padding='xs', style={'margin': '10px'})
 
         super().__init__(layout)
@@ -330,52 +320,34 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         except (ValueError, ZeroDivisionError):
             return "Est. time: -- s"
     
-    # Callback for "Next detuning" button
+    # Callback for "Set detuning" button
     @callback(
         Output(ids.end_freq_ctrl(MATCH), 'value', allow_duplicate=True),
         Output(ids.output_updated(MATCH), 'checked', allow_duplicate=True),
-        Output(ids.detuning_index_store(MATCH), 'data', allow_duplicate=True),
-        [Input(ids.next_detuning_btn(MATCH), 'n_clicks')],
-        [State(ids.detuning_list(MATCH), 'value'),
-         State(ids.cav_tem00_tem01_diff(MATCH), 'value'),
-         State(ids.detuning_index_store(MATCH), 'data')],
+        [Input(ids.set_detuning_btn(MATCH), 'n_clicks')],
+        [State(ids.target_detuning(MATCH), 'value'),
+         State(ids.cav_tem00_tem01_diff(MATCH), 'value')],
         prevent_initial_call=True
     )
-    def next_detuning(n_clicks, detuning_list_str, tem00_tem01_spacing, current_index):
+    def set_detuning(n_clicks, target_detuning, tem00_tem01_spacing):
         """
-        Calculate next detuning frequency and set it to the ramp Final Frequency field.
+        Calculate target detuning frequency and set it to the ramp Final Frequency field.
         Final ramp frequency = TEM00-TEM01 spacing - 100000 + detuning
         """
-        if n_clicks is None or not detuning_list_str or tem00_tem01_spacing is None:
-            return no_update, no_update, no_update
+        if n_clicks is None or target_detuning is None or tem00_tem01_spacing is None:
+            return no_update, no_update
         
         try:
-            # Parse the detuning list from string
-            detunings = [float(d.strip()) for d in detuning_list_str.split(',') if d.strip()]
-            
-            if not detunings:
-                return no_update, no_update, no_update
-            
-            # Get the current index (default to 0 if not set)
-            if current_index is None:
-                current_index = 0
-            
-            # Get the current detuning from the list
-            current_detuning = detunings[current_index % len(detunings)]
-            
             # Calculate the final ramp frequency
-            final_freq = tem00_tem01_spacing - 100000 + current_detuning
+            final_freq = tem00_tem01_spacing - 100000 + target_detuning
             
-            # Move to the next index (cycle through)
-            next_index = (current_index + 1) % len(detunings)
+            print(f"Set detuning button pressed: using detuning {target_detuning} kHz, final freq = {final_freq} kHz")
             
-            print(f"Next detuning button pressed: using detuning {current_detuning} kHz, final freq = {final_freq} kHz")
+            return final_freq, False
             
-            return final_freq, False, next_index
-            
-        except (ValueError, IndexError) as e:
-            print(f"Error parsing detuning list: {e}")
-            return no_update, no_update, no_update
+        except (ValueError, TypeError) as e:
+            print(f"Error calculating detuning frequency: {e}")
+            return no_update, no_update
 
     @callback(
         Output(ids.output_updated(MATCH), 'checked', allow_duplicate=True),
@@ -458,12 +430,12 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         State(ids.output_on(MATCH), 'checked'),
         State(ids.cav_tem00_tem01_diff(MATCH), 'value'),
         State(ids.curr_detuning(MATCH), 'value'),
-        State(ids.detuning_list(MATCH), 'value'),
+        State(ids.target_detuning(MATCH), 'value'),
         prevent_initial_call=True
     )
     def update_config_file(output_updated, cfg_data, curr_freq_kHz, att_dB,
                            end_freq_kHz, freq_step_kHz, delay_s, output_ison, tem00_tem01_det,
-                           current_detuning, detuning_list_str):
+                           current_detuning, target_detuning):
         if output_updated:
             new_config = {}
             new_config["Output frequency"] = curr_freq_kHz
@@ -471,22 +443,13 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             new_config["Output on"] = output_ison
             new_config["TEM00 - TEM01 separation kHz"] = tem00_tem01_det
             new_config["Current detuning kHz"] = current_detuning
+            new_config["Target detuning kHz"] = target_detuning
             new_config["Scripts updated"] = output_updated
             new_config["Ramp"] = {}
             new_config["Ramp"]["Starting frequency kHz"] = curr_freq_kHz
             new_config["Ramp"]["Ending frequency kHz"] = end_freq_kHz
             new_config["Ramp"]["Frequency step kHz"] = freq_step_kHz
             new_config["Ramp"]["Delay seconds"] = delay_s
-            
-            # Parse and save the detuning list
-            try:
-                detuning_list = [float(d.strip()) for d in detuning_list_str.split(',') if d.strip()]
-                new_config["List of detunings kHz"] = detuning_list
-            except (ValueError, AttributeError):
-                # Keep the existing list if parsing fails
-                module_name = list(cfg_data)[0]
-                existing_config = cfg_data.get(module_name, {})
-                new_config["List of detunings kHz"] = existing_config.get("List of detunings kHz", [3000, 2000, 1000, 500, 200])
 
             module_name = list(cfg_data)[0]
             update_config(new_data={module_name:new_config})
