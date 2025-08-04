@@ -1,5 +1,6 @@
 from .Camera import Camera
 import cv2
+import numpy as np
 import time
 import os
 from datetime import datetime
@@ -75,39 +76,47 @@ class ThorCam(Camera):
     def _apply_background_subtraction(self, frame):
         """
         Apply background subtraction to the frame.
+        Handles ROI by cropping the background image to match the current frame size.
         
         Args:
-            frame: Input frame from camera
+            frame: Input frame from camera (may be ROI-cropped)
             
         Returns:
             numpy.ndarray: Frame with background subtracted, values clipped to [0, max]
         """
         try:
-            # Ensure frame and background have the same shape
-            if frame.shape != self.background_image.shape:
-                print(f"Camera {self._id}: Frame shape {frame.shape} != background shape {self.background_image.shape}")
-                return frame  # Return original frame if shapes don't match
+            # Get the appropriate background region
+            background_region = self._get_background_region_for_frame(frame)
+            
+            if background_region is None:
+                print(f"Camera {self._id}: Could not extract background region")
+                return frame
+            
+            # Ensure frame and background region have the same shape
+            if frame.shape != background_region.shape:
+                print(f"Camera {self._id}: Frame shape {frame.shape} != background region shape {background_region.shape}")
+                return frame
             
             # Convert to signed integer to handle negative results
             if frame.dtype == 'uint8':
                 frame_signed = frame.astype('int16')
-                bg_signed = self.background_image.astype('int16')
+                bg_signed = background_region.astype('int16')
                 max_val = 255
             elif frame.dtype == 'uint16':
                 frame_signed = frame.astype('int32')
-                bg_signed = self.background_image.astype('int32')
+                bg_signed = background_region.astype('int32')
                 max_val = 65535
             else:
                 # Handle other data types
                 frame_signed = frame.astype('float32')
-                bg_signed = self.background_image.astype('float32')
+                bg_signed = background_region.astype('float32')
                 max_val = frame.max()
             
             # Subtract background
             subtracted = frame_signed - bg_signed
             
             # Clip negative values to 0 and maintain maximum value
-            clipped = cv2.clip(subtracted, 0, max_val)
+            clipped = np.clip(subtracted, 0, max_val)
             
             # Convert back to original data type
             result = clipped.astype(frame.dtype)
@@ -117,6 +126,44 @@ class ThorCam(Camera):
         except Exception as e:
             print(f"Camera {self._id}: Error in background subtraction: {e}")
             return frame  # Return original frame on error
+
+    def _get_background_region_for_frame(self, frame):
+        """
+        Extract the appropriate region from the background image to match the current frame.
+        Handles ROI by cropping the full-sensor background image.
+        
+        Args:
+            frame: Current camera frame (potentially ROI-cropped)
+            
+        Returns:
+            numpy.ndarray: Background region matching the frame dimensions
+        """
+        try:
+            # If no ROI is set, frame should match background
+            if (self.roi_x_tl is None or self.roi_y_tl is None or 
+                self.roi_x_br is None or self.roi_y_br is None):
+                # No ROI set, use full background
+                return self.background_image
+            
+            # ROI is set, crop background to match the ROI region
+            roi_height = self.roi_y_br - self.roi_y_tl + 1
+            roi_width = self.roi_x_br - self.roi_x_tl + 1
+            
+            # Check if frame dimensions match expected ROI dimensions
+            if frame.shape[0] != roi_height or frame.shape[1] != roi_width:
+                print(f"Camera {self._id}: Frame size {frame.shape} doesn't match expected ROI size ({roi_height}, {roi_width})")
+                # Try to use full background if ROI doesn't match
+                return self.background_image
+            
+            # Crop background image to ROI region
+            background_roi = self.background_image[self.roi_y_tl:self.roi_y_br+1, 
+                                                  self.roi_x_tl:self.roi_x_br+1]
+            
+            return background_roi
+            
+        except Exception as e:
+            print(f"Camera {self._id}: Error extracting background region: {e}")
+            return None
 
     def close(self):
         self._camera.disarm()
