@@ -91,7 +91,7 @@ class ThorCam(Camera):
         try:
             # Need to disarm before setting ROI
             self._camera.disarm()
-            self._camera.ROI(self.roi_x_tl, self.roi_y_tl, self.roi_x_br, self.roi_y_br)
+            self._camera.roi = (self.roi_x_tl, self.roi_y_tl, self.roi_x_br, self.roi_y_br)
             # Arm again
             self._camera.arm(2)
             self._camera.issue_software_trigger()

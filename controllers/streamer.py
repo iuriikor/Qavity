@@ -31,6 +31,8 @@ class WebcamStreamer:
                     #     await asyncio.sleep(1 / self._camera.framerate)
 
                     frame = self._camera.get_frame()
+                    if frame is None:
+                        print('STREAMER: FRAME IS NONE')
                     if frame is not None:
                         # print('STREAMER SIDE: FRAME IS NOT NONE')
                         _, jpeg = cv2.imencode('.jpg', frame)

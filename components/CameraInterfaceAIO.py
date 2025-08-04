@@ -170,18 +170,12 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         if camera is None:
             print("CAMERA NOT FOUND - USING PLACEHOLDER")
             camera_screen = html.Img(src=self._placeholder, id=self.ids.htmlImg(aio_id),
+                                     style={'width': '400px', 'height': '400px'}
                                      **htmlImg_props)
         else:
             camera_screen = html.Img(id=self.ids.htmlImg(aio_id), **htmlImg_props)
         # Hidden Div to mitigate problems with callbacks without Output
         hidden_div = html.Div([], id=self.ids.hidden_div(aio_id), style={'display': 'none'})
-        #%% LAYOUT DEFINITION
-        # layout = dmc.Flex([],
-        #                   direction='column',
-        #                   style={'width': '400px', 'padding': '10px',
-        #                         'border': 'solid', 'border-radius': '20px',
-        #                         'margin': '20px'}
-        #                   )
         layout = dmc.Card(
             children=[],
             style={'width': '400px', 'padding': 'xs', 'margin': '10px'}
