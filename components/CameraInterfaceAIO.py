@@ -194,7 +194,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                 dmc.MenuItem("Name:",
                              rightSection=dmc.TextInput(placeholder="image", debounce=True,
                                                        w=200, id=self.ids.save_image_name(aio_id))),
-                dmc.MenuItem(dmc.Button("Save PNG", size="xs", color="green", 
+                dmc.MenuItem(dmc.Button("Save 16-bit PNG", size="xs", color="green", 
                                        id=self.ids.save_image_btn(aio_id))),
             ]),
     ],closeOnItemClick=False, closeOnClickOutside=True)
@@ -383,11 +383,11 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         folder_path = folder_path.strip()
         image_name = image_name.strip()
         
-        # Save the image using the ThorCam method
+        # Save the image using the ThorCam method (always 16-bit)
         try:
             saved_path = camera.save_image(folder_path, image_name)
             if saved_path:
-                print(f'Camera {aio_id}: Successfully saved image to {saved_path}')
+                print(f'Camera {aio_id}: Successfully saved 16-bit image to {saved_path}')
             else:
                 print(f'Camera {aio_id}: Failed to save image')
         except Exception as e:

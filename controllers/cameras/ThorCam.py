@@ -117,7 +117,8 @@ class ThorCam(Camera):
 
     def save_image(self, folder_path, image_name):
         """
-        Save current camera frame as PNG with timestamp prefix.
+        Save current camera frame as 16-bit PNG with timestamp prefix.
+        Always saves as 16-bit to preserve maximum dynamic range.
         
         Args:
             folder_path (str): Directory path to save the image
@@ -162,27 +163,28 @@ class ThorCam(Camera):
             print(f"Camera {self._id}: Image dtype: {frame_to_save.dtype}")
             print(f"Camera {self._id}: Image min/max: {frame_to_save.min()}/{frame_to_save.max()}")
             
-            # Convert image format if needed
-            # Most camera sensors output 12-bit or 16-bit data that needs normalization
-            if frame_to_save.dtype == 'uint16':
-                # Convert 16-bit to 8-bit for PNG
-                # First normalize to 0-255 range
-                frame_normalized = (frame_to_save / frame_to_save.max() * 255).astype('uint8')
-                frame_to_save = frame_normalized
-                print(f"Camera {self._id}: Converted 16-bit to 8-bit")
-            elif frame_to_save.dtype != 'uint8':
-                # Handle other data types
-                frame_normalized = cv2.normalize(frame_to_save, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-                frame_to_save = frame_normalized
-                print(f"Camera {self._id}: Normalized image to 8-bit")
-            
-            # Apply rotation if needed (consistent with get_frame logic)
+            # Apply rotation if needed (before format conversion)
             if self.rotate_img:
                 frame_to_save = cv2.rotate(frame_to_save, cv2.ROTATE_90_CLOCKWISE)
             
-            success = cv2.imwrite(full_path, frame_to_save)
+            # Always save as 16-bit PNG to preserve maximum dynamic range
+            if frame_to_save.dtype == 'uint16':
+                # Already 16-bit, save directly
+                print(f"Camera {self._id}: Saving native 16-bit data")
+                success = cv2.imwrite(full_path, frame_to_save)
+            elif frame_to_save.dtype == 'uint8':
+                # Convert 8-bit to 16-bit by scaling up
+                frame_16bit = (frame_to_save.astype('uint16') * 257)  # 257 = 65535/255
+                print(f"Camera {self._id}: Upscaling 8-bit to 16-bit")
+                success = cv2.imwrite(full_path, frame_16bit)
+            else:
+                # Normalize other formats to 16-bit range
+                frame_16bit = cv2.normalize(frame_to_save, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
+                print(f"Camera {self._id}: Normalizing to 16-bit")
+                success = cv2.imwrite(full_path, frame_16bit)
+            
             if success:
-                print(f"Camera {self._id}: Image saved to {full_path}")
+                print(f"Camera {self._id}: 16-bit image saved to {full_path}")
                 return full_path
             else:
                 print(f"Camera {self._id}: Failed to save image to {full_path}")
