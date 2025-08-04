@@ -75,6 +75,21 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             'subcomponent': 'save_image_btn',
             'aio_id': aio_id
         }
+        bg_path_input = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'bg_path_input',
+            'aio_id': aio_id
+        }
+        bg_subtraction_checkbox = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'bg_subtraction_checkbox',
+            'aio_id': aio_id
+        }
+        load_bg_btn = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'load_bg_btn',
+            'aio_id': aio_id
+        }
         hidden_div = lambda aio_id: {
             'component': 'CameraInterfaceAIO',
             'subcomponent': 'hidden_div',
@@ -198,6 +213,20 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                                                         id=self.ids.save_image_name(aio_id))),
                 dmc.MenuItem(dmc.Button("Save 16-bit PNG", size="xs", color="green", 
                                        id=self.ids.save_image_btn(aio_id))),
+                dmc.MenuDivider(),
+                dmc.MenuLabel("Background Subtraction"),
+                dmc.MenuItem("Background Path:",
+                             rightSection=dmc.TextInput(placeholder="C:/path/to/background.png", debounce=True,
+                                                       w=200, persistence=True, persistence_type='local',
+                                                       id=self.ids.bg_path_input(aio_id))),
+                dmc.MenuItem(
+                    dmc.Flex([
+                        dmc.Checkbox(label="Remove background", checked=False, size="sm",
+                                    id=self.ids.bg_subtraction_checkbox(aio_id)),
+                        dmc.Button("Load Background", size="xs", color="blue",
+                                  id=self.ids.load_bg_btn(aio_id))
+                    ], gap="md", align="center", justify="space-between")
+                ),
             ]),
     ],closeOnItemClick=False, closeOnClickOutside=True)
         menu = dmc.CardSection([
@@ -394,5 +423,57 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                 print(f'Camera {aio_id}: Failed to save image')
         except Exception as e:
             print(f'Camera {aio_id}: Error during image save: {str(e)}')
+        
+        return ''
+
+    @callback(
+        Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True),
+        Input(ids.load_bg_btn(MATCH), 'n_clicks'),
+        State(ids.bg_path_input(MATCH), 'value'),
+        prevent_initial_call=True
+    )
+    def load_background(n_clicks, bg_path):
+        """Load background image from specified path"""
+        if n_clicks is None or not bg_path:
+            return no_update
+            
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+        
+        # Get the camera
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+        except Exception as e:
+            print(f'Camera using placeholder: {str(e)}')
+            return ''
+        
+        # Load the background image
+        success = camera.set_background_path(bg_path.strip())
+        if success:
+            print(f'Camera {aio_id}: Background image loaded successfully')
+        else:
+            print(f'Camera {aio_id}: Failed to load background image')
+        
+        return ''
+
+    @callback(
+        Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True),
+        Input(ids.bg_subtraction_checkbox(MATCH), 'checked'),
+        prevent_initial_call=True
+    )
+    def toggle_background_subtraction(enable_bg):
+        """Enable or disable background subtraction"""
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+        
+        # Get the camera
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+        except Exception as e:
+            print(f'Camera using placeholder: {str(e)}')
+            return ''
+        
+        # Set background subtraction state
+        camera.set_background_subtraction(enable_bg)
         
         return ''

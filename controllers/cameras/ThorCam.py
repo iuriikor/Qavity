@@ -10,6 +10,12 @@ class ThorCam(Camera):
         self._sdk = sdk
         self._current_frame = None  # Instance variable to hold the current frame
         self._image_buffer = None  # Instance variable to hold the image buffer
+        
+        # Background subtraction variables
+        self.background_path = None  # Path to background image file
+        self.background_image = None  # Loaded background image data
+        self.remove_bg = False  # Boolean to enable/disable background subtraction
+        
         print(f"Initialized camera, ID {self._id}")
         
     def __enter__(self):
@@ -50,14 +56,67 @@ class ThorCam(Camera):
         # print("Frame acquired")
         if self._current_frame is not None:
             self._image_buffer = self._current_frame.image_buffer
-            # print("CAMERA SIDE: FRAME IS NOT NONE")
-            if self.rotate_img:
-                return cv2.rotate(self._image_buffer, cv2.ROTATE_90_CLOCKWISE)
+            
+            # Apply background subtraction if enabled
+            if self.remove_bg and self.background_image is not None:
+                processed_frame = self._apply_background_subtraction(self._image_buffer)
             else:
-                return self._image_buffer
+                processed_frame = self._image_buffer
+            
+            # Apply rotation if needed
+            if self.rotate_img:
+                return cv2.rotate(processed_frame, cv2.ROTATE_90_CLOCKWISE)
+            else:
+                return processed_frame
         else:
             # print("CAMERA SIDE: FRAME IS NONE")
             return None
+
+    def _apply_background_subtraction(self, frame):
+        """
+        Apply background subtraction to the frame.
+        
+        Args:
+            frame: Input frame from camera
+            
+        Returns:
+            numpy.ndarray: Frame with background subtracted, values clipped to [0, max]
+        """
+        try:
+            # Ensure frame and background have the same shape
+            if frame.shape != self.background_image.shape:
+                print(f"Camera {self._id}: Frame shape {frame.shape} != background shape {self.background_image.shape}")
+                return frame  # Return original frame if shapes don't match
+            
+            # Convert to signed integer to handle negative results
+            if frame.dtype == 'uint8':
+                frame_signed = frame.astype('int16')
+                bg_signed = self.background_image.astype('int16')
+                max_val = 255
+            elif frame.dtype == 'uint16':
+                frame_signed = frame.astype('int32')
+                bg_signed = self.background_image.astype('int32')
+                max_val = 65535
+            else:
+                # Handle other data types
+                frame_signed = frame.astype('float32')
+                bg_signed = self.background_image.astype('float32')
+                max_val = frame.max()
+            
+            # Subtract background
+            subtracted = frame_signed - bg_signed
+            
+            # Clip negative values to 0 and maintain maximum value
+            clipped = cv2.clip(subtracted, 0, max_val)
+            
+            # Convert back to original data type
+            result = clipped.astype(frame.dtype)
+            
+            return result
+            
+        except Exception as e:
+            print(f"Camera {self._id}: Error in background subtraction: {e}")
+            return frame  # Return original frame on error
 
     def close(self):
         self._camera.disarm()
@@ -158,11 +217,6 @@ class ThorCam(Camera):
         
         # Save the image as PNG
         try:
-            # Debug: print image information
-            print(f"Camera {self._id}: Image shape: {frame_to_save.shape}")
-            print(f"Camera {self._id}: Image dtype: {frame_to_save.dtype}")
-            print(f"Camera {self._id}: Image min/max: {frame_to_save.min()}/{frame_to_save.max()}")
-            
             # Apply rotation if needed (before format conversion)
             if self.rotate_img:
                 frame_to_save = cv2.rotate(frame_to_save, cv2.ROTATE_90_CLOCKWISE)
@@ -170,21 +224,18 @@ class ThorCam(Camera):
             # Always save as 16-bit PNG to preserve maximum dynamic range
             if frame_to_save.dtype == 'uint16':
                 # Already 16-bit, save directly
-                print(f"Camera {self._id}: Saving native 16-bit data")
                 success = cv2.imwrite(full_path, frame_to_save)
             elif frame_to_save.dtype == 'uint8':
                 # Convert 8-bit to 16-bit by scaling up
                 frame_16bit = (frame_to_save.astype('uint16') * 257)  # 257 = 65535/255
-                print(f"Camera {self._id}: Upscaling 8-bit to 16-bit")
                 success = cv2.imwrite(full_path, frame_16bit)
             else:
                 # Normalize other formats to 16-bit range
                 frame_16bit = cv2.normalize(frame_to_save, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
-                print(f"Camera {self._id}: Normalizing to 16-bit")
                 success = cv2.imwrite(full_path, frame_16bit)
             
             if success:
-                print(f"Camera {self._id}: 16-bit image saved to {full_path}")
+                print(f"Camera {self._id}: Image saved to {full_path}")
                 return full_path
             else:
                 print(f"Camera {self._id}: Failed to save image to {full_path}")
@@ -193,6 +244,57 @@ class ThorCam(Camera):
         except Exception as e:
             print(f"Camera {self._id}: Error saving image: {e}")
             return None
+
+    def set_background_path(self, background_path):
+        """
+        Set the path to the background image file and load it.
+        
+        Args:
+            background_path (str): Full path to the background image file
+            
+        Returns:
+            bool: True if background loaded successfully, False otherwise
+        """
+        if not background_path or not os.path.exists(background_path):
+            print(f"Camera {self._id}: Background path does not exist: {background_path}")
+            return False
+        
+        try:
+            # Load the background image
+            background_img = cv2.imread(background_path, cv2.IMREAD_UNCHANGED)
+            if background_img is None:
+                print(f"Camera {self._id}: Failed to load background image: {background_path}")
+                return False
+            
+            # Store the background image and path
+            self.background_path = background_path
+            self.background_image = background_img
+            print(f"Camera {self._id}: Background image loaded from {background_path}")
+            print(f"Camera {self._id}: Background shape: {background_img.shape}, dtype: {background_img.dtype}")
+            return True
+            
+        except Exception as e:
+            print(f"Camera {self._id}: Error loading background image: {e}")
+            return False
+
+    def set_background_subtraction(self, enable):
+        """
+        Enable or disable background subtraction.
+        
+        Args:
+            enable (bool): True to enable background subtraction, False to disable
+        """
+        self.remove_bg = enable
+        status = "enabled" if enable else "disabled"
+        print(f"Camera {self._id}: Background subtraction {status}")
+
+    def get_background_path(self):
+        """Get the current background image path."""
+        return self.background_path
+
+    def is_background_subtraction_enabled(self):
+        """Check if background subtraction is enabled."""
+        return self.remove_bg
 
 
 
