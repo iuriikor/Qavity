@@ -148,36 +148,52 @@ class ThorCam(Camera):
             
             # ROI is set, crop background to match the ROI region
             # Note: numpy arrays are indexed as [row, col] = [y, x]
-            roi_height = self.roi_y_br - self.roi_y_tl + 1
-            roi_width = self.roi_x_br - self.roi_x_tl + 1
             
             print(f"Camera {self._id}: ROI coordinates: ({self.roi_x_tl}, {self.roi_y_tl}) -> ({self.roi_x_br}, {self.roi_y_br})")
-            print(f"Camera {self._id}: Expected ROI size: {roi_height}×{roi_width}")
             print(f"Camera {self._id}: Actual frame size: {frame.shape[0]}×{frame.shape[1]}")
             
-            # Check if frame dimensions match expected ROI dimensions
-            if frame.shape[0] != roi_height or frame.shape[1] != roi_width:
-                print(f"Camera {self._id}: Frame size {frame.shape} doesn't match expected ROI size ({roi_height}, {roi_width})")
-                print(f"Camera {self._id}: Using frame dimensions to crop background")
+            # Always use the actual frame dimensions to crop the background
+            # This handles any discrepancies between stored ROI coordinates and actual camera output
+            frame_height, frame_width = frame.shape[:2]
+            
+            # Crop background using the ROI coordinates but matching actual frame size
+            # Handle potential coordinate/dimension mismatches by using frame dimensions
+            try:
+                # Calculate the end coordinates based on ROI start + frame dimensions
+                y_end = self.roi_y_tl + frame_height
+                x_end = self.roi_x_tl + frame_width
                 
-                # Use frame dimensions and try to crop from top-left of background
-                # This is a fallback when ROI coordinates don't match frame size
-                if (frame.shape[0] <= self.background_image.shape[0] and 
-                    frame.shape[1] <= self.background_image.shape[1]):
-                    background_roi = self.background_image[:frame.shape[0], :frame.shape[1]]
-                    print(f"Camera {self._id}: Cropped background to {background_roi.shape} using frame dimensions")
+                # Ensure we don't go beyond background image boundaries
+                y_end = min(y_end, self.background_image.shape[0])
+                x_end = min(x_end, self.background_image.shape[1])
+                
+                # Crop background image to match frame
+                background_roi = self.background_image[self.roi_y_tl:y_end, 
+                                                      self.roi_x_tl:x_end]
+                
+                print(f"Camera {self._id}: Cropped background from {self.background_image.shape} to {background_roi.shape}")
+                print(f"Camera {self._id}: Background region: [{self.roi_y_tl}:{y_end}, {self.roi_x_tl}:{x_end}]")
+                
+                # Final size check - if still doesn't match, crop to exact frame size
+                if background_roi.shape[:2] != frame.shape[:2]:
+                    print(f"Camera {self._id}: Size mismatch, cropping to exact frame size")
+                    background_roi = background_roi[:frame_height, :frame_width]
+                    print(f"Camera {self._id}: Final background size: {background_roi.shape}")
+                
+                return background_roi
+                
+            except Exception as slice_error:
+                print(f"Camera {self._id}: Error with ROI slicing: {slice_error}")
+                
+                # Ultimate fallback: crop from top-left of background to match frame size
+                if (frame_height <= self.background_image.shape[0] and 
+                    frame_width <= self.background_image.shape[1]):
+                    background_roi = self.background_image[:frame_height, :frame_width]
+                    print(f"Camera {self._id}: Fallback: cropped background to {background_roi.shape} from top-left")
                     return background_roi
                 else:
-                    print(f"Camera {self._id}: Frame larger than background, cannot crop")
+                    print(f"Camera {self._id}: Cannot crop background - frame larger than background")
                     return self.background_image
-            
-            # Crop background image to ROI region using proper indexing
-            # background_image[y_start:y_end, x_start:x_end]
-            background_roi = self.background_image[self.roi_y_tl:self.roi_y_br+1, 
-                                                  self.roi_x_tl:self.roi_x_br+1]
-            
-            print(f"Camera {self._id}: Cropped background from {self.background_image.shape} to {background_roi.shape}")
-            return background_roi
             
         except Exception as e:
             print(f"Camera {self._id}: Error extracting background region: {e}")
