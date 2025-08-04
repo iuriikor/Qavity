@@ -130,7 +130,7 @@ class ThorCam(Camera):
         frame_to_save = None
         
         # First try to use existing current frame
-        if self._current_frame is not None and self._image_buffer is not None:
+        if self._image_buffer is not None:
             frame_to_save = self._image_buffer
             print(f"Camera {self._id}: Using existing frame for save")
         else:
@@ -157,6 +157,25 @@ class ThorCam(Camera):
         
         # Save the image as PNG
         try:
+            # Debug: print image information
+            print(f"Camera {self._id}: Image shape: {frame_to_save.shape}")
+            print(f"Camera {self._id}: Image dtype: {frame_to_save.dtype}")
+            print(f"Camera {self._id}: Image min/max: {frame_to_save.min()}/{frame_to_save.max()}")
+            
+            # Convert image format if needed
+            # Most camera sensors output 12-bit or 16-bit data that needs normalization
+            if frame_to_save.dtype == 'uint16':
+                # Convert 16-bit to 8-bit for PNG
+                # First normalize to 0-255 range
+                frame_normalized = (frame_to_save / frame_to_save.max() * 255).astype('uint8')
+                frame_to_save = frame_normalized
+                print(f"Camera {self._id}: Converted 16-bit to 8-bit")
+            elif frame_to_save.dtype != 'uint8':
+                # Handle other data types
+                frame_normalized = cv2.normalize(frame_to_save, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                frame_to_save = frame_normalized
+                print(f"Camera {self._id}: Normalized image to 8-bit")
+            
             # Apply rotation if needed (consistent with get_frame logic)
             if self.rotate_img:
                 frame_to_save = cv2.rotate(frame_to_save, cv2.ROTATE_90_CLOCKWISE)
