@@ -113,9 +113,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         # Merge user-supplied properties into default properties
         # Set fixed dimensions and stretch the image to fill the container
         default_img_style = {
-            'width': '400px', 
-            'height': '400px', 
-            'padding': '5px 0px 0px 0px', 
+            'padding': '5px 0px 0px 0px',
             'margin-top': 'xs',
             'object-fit': 'fill'  # This makes the image stretch to fill the container
         }
