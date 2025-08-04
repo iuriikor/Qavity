@@ -15,7 +15,7 @@ class WebcamStreamer:
     def _register_endpoint(self):
         """Register the websocket route once during initialization"""
 
-        @webcam_server.websocket(self._path, endpoint=self._camera.id)
+        @webcam_server.websocket(self._path)
         async def stream_handler():
             print(f'CAMERA {self._camera.id} WEBSOCKET CONNECTED')
 
