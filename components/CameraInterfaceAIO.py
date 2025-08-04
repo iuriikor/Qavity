@@ -145,9 +145,11 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             roi_x_tl, roi_y_tl = 0, 0
             roi_x_br, roi_y_br = 1279, 1023  # Common camera resolution as default
 
-        # Load background path from config
+        # Load background and save settings from config
         default_bg_path = self.camera_config.get('background_path', '')
         default_bg_enabled = self.camera_config.get('background_subtraction_enabled', False)
+        default_save_folder = self.camera_config.get('save_folder_path', 'C:/Data/Images')
+        default_save_name = self.camera_config.get('save_image_name', 'image')
         
         # Initialize camera with saved settings
         if camera is not None and default_bg_path:
@@ -222,11 +224,11 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                 dmc.MenuLabel("Save Image"),
                 dmc.MenuItem("Folder:",
                              rightSection=dmc.TextInput(placeholder="C:/Data/Images", debounce=True,
-                                                        w=200, persistence=True, persistence_type='local',
+                                                        w=200, value=default_save_folder,
                                                         id=self.ids.save_folder_path(aio_id))),
                 dmc.MenuItem("Name:",
                              rightSection=dmc.TextInput(placeholder="image", debounce=True,
-                                                        w=200, persistence=True, persistence_type='local',
+                                                        w=200, value=default_save_name,
                                                         id=self.ids.save_image_name(aio_id))),
                 dmc.MenuItem(dmc.Button("Save 16-bit PNG", size="xs", color="green", 
                                        id=self.ids.save_image_btn(aio_id))),
@@ -503,6 +505,90 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         camera_id = str(camera._id)
         current_config = config.get(camera_id, {})
         current_config['background_subtraction_enabled'] = enable_bg
+        update_config({camera_id: current_config})
+        
+        return ''
+
+    @callback(
+        Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True),
+        Input(ids.bg_path_input(MATCH), 'value'),
+        prevent_initial_call=True
+    )
+    def save_background_path(bg_path):
+        """Save background path to config when it changes"""
+        if bg_path is None:
+            return no_update
+            
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+        
+        # Get the camera
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+        except Exception as e:
+            print(f'Camera using placeholder: {str(e)}')
+            return ''
+        
+        # Save background path to config
+        camera_id = str(camera._id)
+        current_config = config.get(camera_id, {})
+        current_config['background_path'] = bg_path.strip() if bg_path else ''
+        update_config({camera_id: current_config})
+        
+        return ''
+
+    @callback(
+        Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True),
+        Input(ids.save_folder_path(MATCH), 'value'),
+        prevent_initial_call=True
+    )
+    def save_folder_path(folder_path):
+        """Save image folder path to config when it changes"""
+        if folder_path is None:
+            return no_update
+            
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+        
+        # Get the camera
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+        except Exception as e:
+            print(f'Camera using placeholder: {str(e)}')
+            return ''
+        
+        # Save folder path to config
+        camera_id = str(camera._id)
+        current_config = config.get(camera_id, {})
+        current_config['save_folder_path'] = folder_path.strip() if folder_path else ''
+        update_config({camera_id: current_config})
+        
+        return ''
+
+    @callback(
+        Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True),
+        Input(ids.save_image_name(MATCH), 'value'),
+        prevent_initial_call=True
+    )
+    def save_image_name(image_name):
+        """Save image name to config when it changes"""
+        if image_name is None:
+            return no_update
+            
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+        
+        # Get the camera
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+        except Exception as e:
+            print(f'Camera using placeholder: {str(e)}')
+            return ''
+        
+        # Save image name to config
+        camera_id = str(camera._id)
+        current_config = config.get(camera_id, {})
+        current_config['save_image_name'] = image_name.strip() if image_name else ''
         update_config({camera_id: current_config})
         
         return ''
