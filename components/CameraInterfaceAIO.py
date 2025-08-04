@@ -111,10 +111,19 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             roi_x_br, roi_y_br = 1279, 1023  # Common camera resolution as default
         
         # Merge user-supplied properties into default properties
-        default_img_style = {'max-width': '20%', 'padding': '5px 0px 0px 0px', 'margin-top': 'xs'}
+        # Set fixed dimensions and stretch the image to fill the container
+        default_img_style = {
+            'width': '400px', 
+            'height': '400px', 
+            'padding': '5px 0px 0px 0px', 
+            'margin-top': 'xs',
+            'object-fit': 'fill'  # This makes the image stretch to fill the container
+        }
         htmlImg_props = htmlImg_props.copy() if htmlImg_props else {} # copy the dict so as to not mutate the user's dict
         if 'style' in htmlImg_props:
             htmlImg_props['style'].update(default_img_style)
+        else:
+            htmlImg_props['style'] = default_img_style
 
         # Define the component's layout
         # cam_name = dmc.CardSection([dmc.Text(name, size='xl')],
@@ -169,8 +178,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
 
         if camera is None:
             print("CAMERA NOT FOUND - USING PLACEHOLDER")
-            camera_screen = html.Img(src=self._placeholder, id=self.ids.htmlImg(aio_id),
-                                     style={'width': '400px', 'height': '400px'}
+            camera_screen = html.Img(src=self._placeholder, id=self.ids.htmlImg(aio_id), 
                                      **htmlImg_props)
         else:
             camera_screen = html.Img(id=self.ids.htmlImg(aio_id), **htmlImg_props)
