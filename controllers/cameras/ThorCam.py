@@ -22,16 +22,23 @@ class ThorCam(Camera):
     def initialize(self, framerate=10, exposure_ms=1, polling_timeout_ms=1000, **kwargs):
         # First unwrap any additional camera properties
         self.rotate_img = kwargs.get("rotate_img", False)
-        self.roi_hor = kwargs.get("roi_hor", None)
-        self.roi_ver = kwargs.get("roi_ver", None)
+        self.roi_x_tl = kwargs.get("roi_x_tl", None)
+        self.roi_y_tl = kwargs.get("roi_y_tl", None)
+        self.roi_x_br = kwargs.get("roi_x_br", None)
+        self.roi_y_br = kwargs.get("roi_y_br", None)
         # Then initialize camera
         camera = self._sdk.open_camera(self._id)
         time.sleep(1) # Let the camera connect and start properly
         self._camera = camera
         self._camera.frames_per_trigger_zero_for_unlimited = 0
+        # Set camera acquisition properties
         self.set_exposure_ms(exposure_ms)
         self.set_timeout(polling_timeout_ms)
         self.framerate = framerate
+        # Get sensor size
+        self.sensor_width = self._camera.sensor_width_pixels
+        self.sensor_height = self._camera.sensor_height_pixels
+        # Arm camera for acquisition
         self._camera.arm(2)
         self._camera.issue_software_trigger()
 
@@ -64,6 +71,35 @@ class ThorCam(Camera):
 
     def get_exposure_ms(self):
         return self._camera.exposure_time_us/1000.0
+
+    def set_ROI(self, upper_left_x_pixels, upper_left_y_pixels,
+                lower_right_x_pixels, lower_right_y_pixels):
+        """
+        Sets ROI of the camera using 2 pairs or X-Y pixel coordintates, top left and bottom right.
+        THIS METHOD NEEDS THAT THE VALUES ARE RANGE CHECKED BEFORE BEING PASSED.
+
+        :param upper_left_x_pixels: x-coordinate, top left
+        :param upper_left_y_pixels: y-coordinate, top left
+        :param lower_right_x_pixels: x-coordinate, bottom right
+        :param lower_right_y_pixels: y-coordinate, bottom right
+        :return: None
+        """
+        self.roi_x_tl = int(upper_left_x_pixels)
+        self.roi_y_tl = int(upper_left_y_pixels)
+        self.roi_x_br = int(lower_right_x_pixels)
+        self.roi_y_br = int(lower_right_y_pixels)
+        try:
+            # Need to disarm before setting ROI
+            self._camera.disarm()
+            self._camera.ROI(self.roi_x_tl, self.roi_y_tl, self.roi_x_br, self.roi_y_br)
+            # Arm again
+            self._camera.arm(2)
+            self._camera.issue_software_trigger()
+        except Exception as e:
+            print(e)
+
+    def get_ROI(self):
+        return (self.roi_x_tl, self.roi_y_tl, self.roi_x_br, self.roi_y_br)
 
     def set_timeout(self, timeout):
         self._camera.image_poll_timeout_ms = timeout

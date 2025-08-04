@@ -1,4 +1,4 @@
-from dash import html, Input, Output, MATCH, callback, callback_context
+from dash import html, Input, Output, State, MATCH, callback, callback_context, no_update
 import uuid
 import json
 import dash_bootstrap_components as dbc
@@ -35,6 +35,31 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             'subcomponent': 'stop_stream_btn',
             'aio_id': aio_id
         }
+        roi_x_tl = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'roi_x_tl',
+            'aio_id': aio_id
+        }
+        roi_y_tl = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'roi_y_tl',
+            'aio_id': aio_id
+        }
+        roi_x_br = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'roi_x_br',
+            'aio_id': aio_id
+        }
+        roi_y_br = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'roi_y_br',
+            'aio_id': aio_id
+        }
+        set_roi_btn = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'set_roi_btn',
+            'aio_id': aio_id
+        }
         hidden_div = lambda aio_id: {
             'component': 'CameraInterfaceAIO',
             'subcomponent': 'hidden_div',
@@ -69,7 +94,22 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         if placeholder is not None:
             self._placeholder = placeholder
 
-        default_exp = camera.get_exposure_ms()
+        # Handle camera properties (exposure and ROI)
+        if camera is not None:
+            default_exp = camera.get_exposure_ms()
+            # Get current ROI values or use full sensor as default
+            if hasattr(camera, 'get_ROI') and camera.get_ROI()[0] is not None:
+                roi_x_tl, roi_y_tl, roi_x_br, roi_y_br = camera.get_ROI()
+            else:
+                # Default to full sensor
+                roi_x_tl, roi_y_tl = 0, 0
+                roi_x_br, roi_y_br = camera.sensor_width - 1, camera.sensor_height - 1
+        else:
+            # Placeholder values when no camera
+            default_exp = 1.0
+            roi_x_tl, roi_y_tl = 0, 0
+            roi_x_br, roi_y_br = 1279, 1023  # Common camera resolution as default
+        
         # Merge user-supplied properties into default properties
         default_img_style = {'max-width': '20%', 'padding': '5px 0px 0px 0px', 'margin-top': 'xs'}
         htmlImg_props = htmlImg_props.copy() if htmlImg_props else {} # copy the dict so as to not mutate the user's dict
@@ -89,6 +129,29 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                              rightSection=dmc.NumberInput(value=default_exp, debounce=True,
                                                           suffix=' ms', w=100,
                                                           id=self.ids.exposureControlInput(aio_id))),
+                dmc.MenuDivider(),
+                dmc.MenuLabel("Region of Interest (ROI)"),
+                dmc.MenuItem("Top-Left X:",
+                             rightSection=dmc.NumberInput(value=roi_x_tl, debounce=True,
+                                                          w=80, min=0, 
+                                                          max=camera.sensor_width-1 if camera else 4095,
+                                                          id=self.ids.roi_x_tl(aio_id))),
+                dmc.MenuItem("Top-Left Y:",
+                             rightSection=dmc.NumberInput(value=roi_y_tl, debounce=True,
+                                                          w=80, min=0, 
+                                                          max=camera.sensor_height-1 if camera else 4095,
+                                                          id=self.ids.roi_y_tl(aio_id))),
+                dmc.MenuItem("Bottom-Right X:",
+                             rightSection=dmc.NumberInput(value=roi_x_br, debounce=True,
+                                                          w=80, min=0, 
+                                                          max=camera.sensor_width-1 if camera else 4095,
+                                                          id=self.ids.roi_x_br(aio_id))),
+                dmc.MenuItem("Bottom-Right Y:",
+                             rightSection=dmc.NumberInput(value=roi_y_br, debounce=True,
+                                                          w=80, min=0, 
+                                                          max=camera.sensor_height-1 if camera else 4095,
+                                                          id=self.ids.roi_y_br(aio_id))),
+                dmc.MenuItem(dmc.Button("Set ROI", size="xs", id=self.ids.set_roi_btn(aio_id))),
             ]),
     ],closeOnItemClick=False, closeOnClickOutside=True)
         menu = dmc.CardSection([
@@ -190,4 +253,60 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             return ''
         camera.set_exposure_ms(exposure)
         print(f'Camera {aio_id}: exposure set to {exposure}')
+        return ''
+
+    @callback(
+        Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True),
+        Input(ids.set_roi_btn(MATCH), 'n_clicks'),
+        [State(ids.roi_x_tl(MATCH), 'value'),
+         State(ids.roi_y_tl(MATCH), 'value'),
+         State(ids.roi_x_br(MATCH), 'value'),
+         State(ids.roi_y_br(MATCH), 'value')],
+        prevent_initial_call=True
+    )
+    def set_roi(n_clicks, x_tl, y_tl, x_br, y_br):
+        """Set camera ROI with validation"""
+        if n_clicks is None:
+            return no_update
+            
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+        
+        # Get the camera
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+        except Exception as e:
+            print(f'Camera using placeholder: {str(e)}')
+            return ''
+        
+        # Validate ROI values
+        if None in [x_tl, y_tl, x_br, y_br]:
+            print(f'Camera {aio_id}: ROI values cannot be None')
+            return ''
+        
+        # Check bounds against sensor dimensions
+        if not (0 <= x_tl < camera.sensor_width and 0 <= x_br < camera.sensor_width):
+            print(f'Camera {aio_id}: X coordinates must be between 0 and {camera.sensor_width-1}')
+            return ''
+            
+        if not (0 <= y_tl < camera.sensor_height and 0 <= y_br < camera.sensor_height):
+            print(f'Camera {aio_id}: Y coordinates must be between 0 and {camera.sensor_height-1}')
+            return ''
+        
+        # Check that top-left is actually top-left of bottom-right
+        if x_tl >= x_br:
+            print(f'Camera {aio_id}: Top-left X ({x_tl}) must be less than bottom-right X ({x_br})')
+            return ''
+            
+        if y_tl >= y_br:
+            print(f'Camera {aio_id}: Top-left Y ({y_tl}) must be less than bottom-right Y ({y_br})')
+            return ''
+        
+        # All validation passed, set the ROI
+        try:
+            camera.set_ROI(x_tl, y_tl, x_br, y_br)
+            print(f'Camera {aio_id}: ROI set to ({x_tl}, {y_tl}) - ({x_br}, {y_br})')
+        except Exception as e:
+            print(f'Camera {aio_id}: Error setting ROI: {str(e)}')
+        
         return ''

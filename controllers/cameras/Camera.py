@@ -6,8 +6,14 @@ class Camera:
         self.framerate = None # Desired framerate - can't be higher than 1000/exposure_ms
         self.gain = None # Gain
         self.rotate_img = False # May be easier to rotate image in camera class
-        self.roi_hor = None # Region of interest
-        self.roi_ver = None
+        # Region of interest
+        self.roi_x_tl = None # Top left X
+        self.roi_y_tl = None # Top left Y
+        self.roi_x_br = None  # Bottom right X
+        self.roi_y_br = None  # Bottom right Y
+        # Sensor size in pixels
+        self.sensor_width = None
+        self.sensor_height = None
 
         # Helper variables
         self.streamOn = False
