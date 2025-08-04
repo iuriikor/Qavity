@@ -4,6 +4,7 @@ import json
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
+from config import config, update_config  # Import the config
 
 # All-in-One Components should be suffixed with 'AIO'
 class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
@@ -124,6 +125,10 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         if placeholder is not None:
             self._placeholder = placeholder
 
+        # Load camera config
+        camera_id = str(camera._id) if camera is not None else aio_id
+        self.camera_config = config.get(camera_id, {})
+        
         # Handle camera properties (exposure and ROI)
         if camera is not None:
             default_exp = camera.get_exposure_ms()
@@ -139,6 +144,18 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             default_exp = 1.0
             roi_x_tl, roi_y_tl = 0, 0
             roi_x_br, roi_y_br = 1279, 1023  # Common camera resolution as default
+
+        # Load background path from config
+        default_bg_path = self.camera_config.get('background_path', '')
+        default_bg_enabled = self.camera_config.get('background_subtraction_enabled', False)
+        
+        # Initialize camera with saved settings
+        if camera is not None and default_bg_path:
+            # Load background image if path exists
+            success = camera.set_background_path(default_bg_path)
+            if success:
+                # Set background subtraction state
+                camera.set_background_subtraction(default_bg_enabled)
         
         # Merge user-supplied properties into default properties
         # Set fixed dimensions and stretch the image to fill the container
@@ -217,11 +234,11 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                 dmc.MenuLabel("Background Subtraction"),
                 dmc.MenuItem("Background Path:",
                              rightSection=dmc.TextInput(placeholder="C:/path/to/background.png", debounce=True,
-                                                       w=200, persistence=True, persistence_type='local',
+                                                       w=200, value=default_bg_path,
                                                        id=self.ids.bg_path_input(aio_id))),
                 dmc.MenuItem(
                     dmc.Flex([
-                        dmc.Checkbox(label="Remove background", checked=False, size="sm",
+                        dmc.Checkbox(label="Remove background", checked=default_bg_enabled, size="sm",
                                     id=self.ids.bg_subtraction_checkbox(aio_id)),
                         dmc.Button("Load Background", size="xs", color="blue",
                                   id=self.ids.load_bg_btn(aio_id))
@@ -451,6 +468,12 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         success = camera.set_background_path(bg_path.strip())
         if success:
             print(f'Camera {aio_id}: Background image loaded successfully')
+            
+            # Save background path to config
+            camera_id = str(camera._id)
+            current_config = config.get(camera_id, {})
+            current_config['background_path'] = bg_path.strip()
+            update_config({camera_id: current_config})
         else:
             print(f'Camera {aio_id}: Failed to load background image')
         
@@ -475,5 +498,11 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         
         # Set background subtraction state
         camera.set_background_subtraction(enable_bg)
+        
+        # Save background subtraction state to config
+        camera_id = str(camera._id)
+        current_config = config.get(camera_id, {})
+        current_config['background_subtraction_enabled'] = enable_bg
+        update_config({camera_id: current_config})
         
         return ''

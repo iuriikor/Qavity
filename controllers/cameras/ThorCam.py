@@ -143,21 +143,13 @@ class ThorCam(Camera):
             if (self.roi_x_tl is None or self.roi_y_tl is None or 
                 self.roi_x_br is None or self.roi_y_br is None):
                 # No ROI set, use full background
-                print(f"Camera {self._id}: No ROI set, using full background")
                 return self.background_image
             
             # ROI is set, crop background to match the ROI region
-            # Note: numpy arrays are indexed as [row, col] = [y, x]
-            
-            print(f"Camera {self._id}: ROI coordinates: ({self.roi_x_tl}, {self.roi_y_tl}) -> ({self.roi_x_br}, {self.roi_y_br})")
-            print(f"Camera {self._id}: Actual frame size: {frame.shape[0]}×{frame.shape[1]}")
-            
             # Always use the actual frame dimensions to crop the background
-            # This handles any discrepancies between stored ROI coordinates and actual camera output
             frame_height, frame_width = frame.shape[:2]
             
             # Crop background using the ROI coordinates but matching actual frame size
-            # Handle potential coordinate/dimension mismatches by using frame dimensions
             try:
                 # Calculate the end coordinates based on ROI start + frame dimensions
                 y_end = self.roi_y_tl + frame_height
@@ -171,14 +163,9 @@ class ThorCam(Camera):
                 background_roi = self.background_image[self.roi_y_tl:y_end, 
                                                       self.roi_x_tl:x_end]
                 
-                print(f"Camera {self._id}: Cropped background from {self.background_image.shape} to {background_roi.shape}")
-                print(f"Camera {self._id}: Background region: [{self.roi_y_tl}:{y_end}, {self.roi_x_tl}:{x_end}]")
-                
                 # Final size check - if still doesn't match, crop to exact frame size
                 if background_roi.shape[:2] != frame.shape[:2]:
-                    print(f"Camera {self._id}: Size mismatch, cropping to exact frame size")
                     background_roi = background_roi[:frame_height, :frame_width]
-                    print(f"Camera {self._id}: Final background size: {background_roi.shape}")
                 
                 return background_roi
                 
@@ -189,7 +176,6 @@ class ThorCam(Camera):
                 if (frame_height <= self.background_image.shape[0] and 
                     frame_width <= self.background_image.shape[1]):
                     background_roi = self.background_image[:frame_height, :frame_width]
-                    print(f"Camera {self._id}: Fallback: cropped background to {background_roi.shape} from top-left")
                     return background_roi
                 else:
                     print(f"Camera {self._id}: Cannot crop background - frame larger than background")
