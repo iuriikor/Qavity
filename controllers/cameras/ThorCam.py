@@ -1,6 +1,8 @@
 from .Camera import Camera
 import cv2
 import time
+import os
+from datetime import datetime
 
 class ThorCam(Camera):
     def __init__(self, cam_id, sdk, **kwargs):
@@ -112,6 +114,64 @@ class ThorCam(Camera):
 
     def start_stream(self):
         self.streamOn = True
+
+    def save_image(self, folder_path, image_name):
+        """
+        Save current camera frame as PNG with timestamp prefix.
+        
+        Args:
+            folder_path (str): Directory path to save the image
+            image_name (str): Base name for the image file (without extension)
+            
+        Returns:
+            str: Full path of saved file if successful, None if failed
+        """
+        # Get current frame
+        frame_to_save = None
+        
+        # First try to use existing current frame
+        if self._current_frame is not None and self._image_buffer is not None:
+            frame_to_save = self._image_buffer
+            print(f"Camera {self._id}: Using existing frame for save")
+        else:
+            # Try to get a new frame
+            print(f"Camera {self._id}: Getting new frame for save")
+            frame_to_save = self.get_frame()
+        
+        # Check if we have a valid frame
+        if frame_to_save is None:
+            print(f"Camera {self._id}: No frame available to save")
+            return None
+        
+        # Create directory if it doesn't exist
+        try:
+            os.makedirs(folder_path, exist_ok=True)
+        except Exception as e:
+            print(f"Camera {self._id}: Error creating directory {folder_path}: {e}")
+            return None
+        
+        # Generate timestamp prefix
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{timestamp}_{image_name}.png"
+        full_path = os.path.join(folder_path, filename)
+        
+        # Save the image as PNG
+        try:
+            # Apply rotation if needed (consistent with get_frame logic)
+            if self.rotate_img:
+                frame_to_save = cv2.rotate(frame_to_save, cv2.ROTATE_90_CLOCKWISE)
+            
+            success = cv2.imwrite(full_path, frame_to_save)
+            if success:
+                print(f"Camera {self._id}: Image saved to {full_path}")
+                return full_path
+            else:
+                print(f"Camera {self._id}: Failed to save image to {full_path}")
+                return None
+                
+        except Exception as e:
+            print(f"Camera {self._id}: Error saving image: {e}")
+            return None
 
 
 

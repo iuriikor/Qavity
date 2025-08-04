@@ -60,6 +60,21 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             'subcomponent': 'set_roi_btn',
             'aio_id': aio_id
         }
+        save_folder_path = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'save_folder_path',
+            'aio_id': aio_id
+        }
+        save_image_name = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'save_image_name',
+            'aio_id': aio_id
+        }
+        save_image_btn = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'save_image_btn',
+            'aio_id': aio_id
+        }
         hidden_div = lambda aio_id: {
             'component': 'CameraInterfaceAIO',
             'subcomponent': 'hidden_div',
@@ -138,27 +153,49 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                                                           id=self.ids.exposureControlInput(aio_id))),
                 dmc.MenuDivider(),
                 dmc.MenuLabel("Region of Interest (ROI)"),
-                dmc.MenuItem("Top-Left X:",
-                             rightSection=dmc.NumberInput(value=roi_x_tl, debounce=True,
-                                                          w=80, min=0, 
-                                                          max=camera.sensor_width-1 if camera else 4095,
-                                                          id=self.ids.roi_x_tl(aio_id))),
-                dmc.MenuItem("Top-Left Y:",
-                             rightSection=dmc.NumberInput(value=roi_y_tl, debounce=True,
-                                                          w=80, min=0, 
-                                                          max=camera.sensor_height-1 if camera else 4095,
-                                                          id=self.ids.roi_y_tl(aio_id))),
-                dmc.MenuItem("Bottom-Right X:",
-                             rightSection=dmc.NumberInput(value=roi_x_br, debounce=True,
-                                                          w=80, min=0, 
-                                                          max=camera.sensor_width-1 if camera else 4095,
-                                                          id=self.ids.roi_x_br(aio_id))),
-                dmc.MenuItem("Bottom-Right Y:",
-                             rightSection=dmc.NumberInput(value=roi_y_br, debounce=True,
-                                                          w=80, min=0, 
-                                                          max=camera.sensor_height-1 if camera else 4095,
-                                                          id=self.ids.roi_y_br(aio_id))),
+                # Top-left coordinates row
+                dmc.MenuItem(
+                    dmc.Flex([
+                        dmc.Flex([
+                            dmc.Text("Top-Left:", size="sm", style={"width": "60px"}),
+                            dmc.NumberInput(value=roi_x_tl, debounce=True, placeholder="X",
+                                          w=60, min=0, 
+                                          max=camera.sensor_width-1 if camera else 4095,
+                                          id=self.ids.roi_x_tl(aio_id)),
+                            dmc.NumberInput(value=roi_y_tl, debounce=True, placeholder="Y",
+                                          w=60, min=0, 
+                                          max=camera.sensor_height-1 if camera else 4095,
+                                          id=self.ids.roi_y_tl(aio_id))
+                        ], gap="xs", align="center")
+                    ], direction="column")
+                ),
+                # Bottom-right coordinates row  
+                dmc.MenuItem(
+                    dmc.Flex([
+                        dmc.Flex([
+                            dmc.Text("Bot-Right:", size="sm", style={"width": "60px"}),
+                            dmc.NumberInput(value=roi_x_br, debounce=True, placeholder="X",
+                                          w=60, min=0, 
+                                          max=camera.sensor_width-1 if camera else 4095,
+                                          id=self.ids.roi_x_br(aio_id)),
+                            dmc.NumberInput(value=roi_y_br, debounce=True, placeholder="Y",
+                                          w=60, min=0, 
+                                          max=camera.sensor_height-1 if camera else 4095,
+                                          id=self.ids.roi_y_br(aio_id))
+                        ], gap="xs", align="center")
+                    ], direction="column")
+                ),
                 dmc.MenuItem(dmc.Button("Set ROI", size="xs", id=self.ids.set_roi_btn(aio_id))),
+                dmc.MenuDivider(),
+                dmc.MenuLabel("Save Image"),
+                dmc.MenuItem("Folder:",
+                             rightSection=dmc.TextInput(placeholder="C:/Data/Images", debounce=True,
+                                                       w=200, id=self.ids.save_folder_path(aio_id))),
+                dmc.MenuItem("Name:",
+                             rightSection=dmc.TextInput(placeholder="image", debounce=True,
+                                                       w=200, id=self.ids.save_image_name(aio_id))),
+                dmc.MenuItem(dmc.Button("Save PNG", size="xs", color="green", 
+                                       id=self.ids.save_image_btn(aio_id))),
             ]),
     ],closeOnItemClick=False, closeOnClickOutside=True)
         menu = dmc.CardSection([
@@ -308,5 +345,52 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             print(f'Camera {aio_id}: ROI set to ({x_tl}, {y_tl}) - ({x_br}, {y_br})')
         except Exception as e:
             print(f'Camera {aio_id}: Error setting ROI: {str(e)}')
+        
+        return ''
+
+    @callback(
+        Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True),
+        Input(ids.save_image_btn(MATCH), 'n_clicks'),
+        [State(ids.save_folder_path(MATCH), 'value'),
+         State(ids.save_image_name(MATCH), 'value')],
+        prevent_initial_call=True
+    )
+    def save_image(n_clicks, folder_path, image_name):
+        """Save current camera frame as PNG with timestamp prefix"""
+        if n_clicks is None:
+            return no_update
+            
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+        
+        # Get the camera
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+        except Exception as e:
+            print(f'Camera using placeholder: {str(e)}')
+            return ''
+        
+        # Validate inputs
+        if not folder_path or not folder_path.strip():
+            print(f'Camera {aio_id}: Folder path cannot be empty')
+            return ''
+            
+        if not image_name or not image_name.strip():
+            print(f'Camera {aio_id}: Image name cannot be empty')
+            return ''
+        
+        # Clean the inputs
+        folder_path = folder_path.strip()
+        image_name = image_name.strip()
+        
+        # Save the image using the ThorCam method
+        try:
+            saved_path = camera.save_image(folder_path, image_name)
+            if saved_path:
+                print(f'Camera {aio_id}: Successfully saved image to {saved_path}')
+            else:
+                print(f'Camera {aio_id}: Failed to save image')
+        except Exception as e:
+            print(f'Camera {aio_id}: Error during image save: {str(e)}')
         
         return ''
