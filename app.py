@@ -21,19 +21,6 @@ from themes import *
 img1 = "./static/img/thorcam_1.jpeg"
 img2 = "./static/img/thorcam_2.jpeg"
 
-# def make_layout():
-#     return dmc.MantineProvider(
-#         [dmc.Flex(
-#             [
-#         # CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1),
-#         # CameraInterfaceAIO(aio_id='webcam_2', camera=thorcam_2),
-#         CameraInterfaceAIO(aio_id='webcam_1', placeholder=img1),
-#         CameraInterfaceAIO(aio_id='webcam_2', placeholder=img2),
-#         FrequencyGeneratorInterfaceAIO(aio_id='anapico_1', name='Example DDS'),
-#         WebSocket(url=f"ws://127.0.0.1:5000/stream1", id="ws1"),
-#         WebSocket(url=f"ws://127.0.0.1:5000/stream2", id="ws2"),
-#             ]),
-#     ])
 
 def make_layout():
     logo = "https://github.com/user-attachments/assets/c1ff143b-4365-4fd1-880f-3e97aab5c302"
@@ -98,15 +85,5 @@ def make_layout():
 
     return dmc.MantineProvider([layout],
                                theme=theme)
-
-# def close_app():
-#     global thorcam_1, thorcam_2, thorSDK
-#     time.sleep(1)
-#     del thorcam_1
-#     time.sleep(1)
-#     del thorcam_2
-#     time.sleep(1)
-#     del thorSDK
-
 
 from components.callbacks import *

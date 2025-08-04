@@ -22,23 +22,24 @@ class WebcamStreamer:
             try:
                 while True:
                     if not self._camera.streamOn:
-                        # If streaming is off, wait a bit and check again
-                        await asyncio.sleep(1.0)
+                        # Use a much shorter sleep to avoid blocking other connections
+                        await asyncio.sleep(0.1)
                         continue
 
                     # Streaming is active, get and send frames
-                    # if self._camera.framerate is not None:
-                    #     await asyncio.sleep(1 / self._camera.framerate)
-
                     frame = self._camera.get_frame()
                     if frame is None:
                         print('STREAMER: FRAME IS NONE')
+                        # If no frame available, wait briefly before retrying
+                        await asyncio.sleep(0.1)
+                        continue
+                        
                     if frame is not None:
                         # print('STREAMER SIDE: FRAME IS NOT NONE')
                         _, jpeg = cv2.imencode('.jpg', frame)
                         await websocket.send(jpeg.tobytes())
                         jpeg = None
-                        # await websocket.send(jpeg.tobytes())
+                        
                     await asyncio.sleep(1 / self._camera.framerate)
             except asyncio.CancelledError:
                 print(f'CAMERA {self._camera.id} WEBSOCKET DISCONNECTED')
