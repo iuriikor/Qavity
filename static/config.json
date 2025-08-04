@@ -66,28 +66,31 @@
     }
   ],
   "picoscope_1": {
-    "data_path": "C:\\Users\\CavLev\\Documents\\Data\\20250721_cavity_cooling",
-    "measurement_set_name": "timetrace_fwd_det",
+    "data_path": "C:\\Users\\CavLev\\Documents\\Data\\20250721_cavity_scan",
+    "measurement_set_name": "cavity_scan_timetrace",
     "sampling_frequency": "2",
-    "acquisition_time": "1",
+    "acquisition_time": "10",
     "resolution": "14",
     "Comments": {
-      "experiment": "default experiment",
-      "notes": "initial setup",
-      "number of traps": 2
+      "experiment": "cavity scan",
+      "number of traps": 1,
+      "H Drive Frequency MHz": 50,
+      "H Drive Power mV": 170,
+      "V Drive Frequency MHz": 50,
+      "V Drive Power mV": 170
     },
     "channels": {
       "A": {
         "enabled": "True",
-        "range": "5"
+        "range": "20"
       },
       "B": {
         "enabled": "True",
-        "range": "5"
+        "range": "10"
       },
       "C": {
         "enabled": "True",
-        "range": "5"
+        "range": "0.5"
       },
       "D": {
         "enabled": "True",
@@ -96,17 +99,17 @@
     }
   },
   "Fiber EOM cavity drive": {
-    "Output frequency": 390457,
-    "Output attenuation": 25,
+    "Output frequency": 383483,
+    "Output attenuation": 23,
     "Output on": true,
-    "TEM00 - TEM01 separation kHz": 488457,
-    "Current detuning kHz": 2000,
-    "Target detuning kHz": 2000,
+    "TEM00 - TEM01 separation kHz": 488483,
+    "Current detuning kHz": 5000,
+    "Target detuning kHz": 5000,
     "Scripts updated": true,
     "Ramp": {
-      "Starting frequency kHz": 390457,
-      "Ending frequency kHz": 390457,
-      "Frequency step kHz": 10,
+      "Starting frequency kHz": 383483,
+      "Ending frequency kHz": 383483,
+      "Frequency step kHz": 1,
       "Delay seconds": 0.01
     }
   }

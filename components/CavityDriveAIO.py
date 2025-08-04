@@ -278,7 +278,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             return 0.0
         
         # Apply the detuning formula
-        detuning = current_freq - tem00_tem01_spacing + 100000
+        detuning = -(current_freq - tem00_tem01_spacing + 100000) # Positive detuning is red, ie tweezer frequency lower than cavity
         return round(detuning, 1)
     
     # Callback to calculate and display estimated ramp time
@@ -332,14 +332,14 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
     def set_detuning(n_clicks, target_detuning, tem00_tem01_spacing):
         """
         Calculate target detuning frequency and set it to the ramp Final Frequency field.
-        Final ramp frequency = TEM00-TEM01 spacing - 100000 + detuning
+        Final ramp frequency = TEM00-TEM01 spacing - 100000 - detuning
         """
         if n_clicks is None or target_detuning is None or tem00_tem01_spacing is None:
             return no_update, no_update
         
         try:
             # Calculate the final ramp frequency
-            final_freq = tem00_tem01_spacing - 100000 + target_detuning
+            final_freq = tem00_tem01_spacing - 100000 - target_detuning
             
             print(f"Set detuning button pressed: using detuning {target_detuning} kHz, final freq = {final_freq} kHz")
             

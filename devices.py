@@ -5,6 +5,7 @@ from controllers.frequency_generators.Mirny import MirnyFrequencyGenerator
 
 # Import ThorCam DLLs
 os.add_dll_directory("C:\\Users\\CavLev\\Documents\\Qavity\\dll")
+# os.add_dll_directory("C:\\Program Files\\Pico Technology\\PicoScope 7 T&M Stable")
 from thorlabs_tsi_sdk.tl_camera import TLCameraSDK
 
 from controllers.cameras.ThorCam import ThorCam

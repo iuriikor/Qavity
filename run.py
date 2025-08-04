@@ -19,7 +19,7 @@ if __name__ == '__main__':
             # CherryPy configuration
             cherrypy_config = {
                 'server.socket_host': '127.0.0.1',
-                'server.socket_port': 8050,
+                'server.socket_port': 8181,
                 'server.thread_pool': 4,  # Adjust based on expected concurrent users
                 'engine.autoreload.on': False,  # Disable autoreload for production
                 'log.screen': True,  # Show logs on console
@@ -45,7 +45,7 @@ if __name__ == '__main__':
             config = Config()
             config.bind = ["127.0.0.1:5000"]  # Standard port for Quart
             config.use_reloader = False  # Disable reloader for production
-            config.workers = 2  # Single worker is usually sufficient for WebSockets
+            config.workers = 1  # Single worker is usually sufficient for WebSockets
             config.keep_alive_timeout = 120  # 2 minutes keep-alive
             config.websocket_ping_interval = 30  # Send ping every 30 seconds
             config.websocket_timeout = 300  # 5 minutes timeout for WebSockets
