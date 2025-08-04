@@ -159,11 +159,11 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                         dmc.Flex([
                             dmc.Text("Top-Left:", size="sm", style={"width": "60px"}),
                             dmc.NumberInput(value=roi_x_tl, debounce=True, placeholder="X",
-                                          w=60, min=0, 
+                                          w=100, min=0,
                                           max=camera.sensor_width-1 if camera else 4095,
                                           id=self.ids.roi_x_tl(aio_id)),
                             dmc.NumberInput(value=roi_y_tl, debounce=True, placeholder="Y",
-                                          w=60, min=0, 
+                                          w=100, min=0,
                                           max=camera.sensor_height-1 if camera else 4095,
                                           id=self.ids.roi_y_tl(aio_id))
                         ], gap="xs", align="center")
@@ -175,11 +175,11 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                         dmc.Flex([
                             dmc.Text("Bot-Right:", size="sm", style={"width": "60px"}),
                             dmc.NumberInput(value=roi_x_br, debounce=True, placeholder="X",
-                                          w=60, min=0, 
+                                          w=100, min=0,
                                           max=camera.sensor_width-1 if camera else 4095,
                                           id=self.ids.roi_x_br(aio_id)),
                             dmc.NumberInput(value=roi_y_br, debounce=True, placeholder="Y",
-                                          w=60, min=0, 
+                                          w=100, min=0,
                                           max=camera.sensor_height-1 if camera else 4095,
                                           id=self.ids.roi_y_br(aio_id))
                         ], gap="xs", align="center")
@@ -190,10 +190,12 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                 dmc.MenuLabel("Save Image"),
                 dmc.MenuItem("Folder:",
                              rightSection=dmc.TextInput(placeholder="C:/Data/Images", debounce=True,
-                                                       w=200, id=self.ids.save_folder_path(aio_id))),
+                                                        w=200, persistence=True, persistence_type='local',
+                                                        id=self.ids.save_folder_path(aio_id))),
                 dmc.MenuItem("Name:",
                              rightSection=dmc.TextInput(placeholder="image", debounce=True,
-                                                       w=200, id=self.ids.save_image_name(aio_id))),
+                                                        w=200, persistence=True, persistence_type='local',
+                                                        id=self.ids.save_image_name(aio_id))),
                 dmc.MenuItem(dmc.Button("Save 16-bit PNG", size="xs", color="green", 
                                        id=self.ids.save_image_btn(aio_id))),
             ]),
