@@ -4,6 +4,9 @@ import numpy as np
 import time
 import os
 from datetime import datetime
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 class ThorCam(Camera):
     def __init__(self, cam_id, sdk, **kwargs):
@@ -17,14 +20,14 @@ class ThorCam(Camera):
         self.background_image = None  # Loaded background image data
         self.remove_bg = False  # Boolean to enable/disable background subtraction
         
-        print(f"Initialized camera, ID {self._id}")
+        logger.info(f"Initialized camera, ID {self._id}")
         
     def __enter__(self):
         return self
     
     def __exit__(self, exception_type, exception_value, exception_traceback):
         if exception_type is not None:
-            print(exception_traceback)
+            logger.error(f"Exception in camera context: {exception_traceback}")
         self.close()
         return True if exception_type is None else False
 
@@ -89,12 +92,12 @@ class ThorCam(Camera):
             background_region = self._get_background_region_for_frame(frame)
             
             if background_region is None:
-                print(f"Camera {self._id}: Could not extract background region")
+                logger.warning(f"Camera {self._id}: Could not extract background region")
                 return frame
             
             # Ensure frame and background region have the same shape
             if frame.shape != background_region.shape:
-                print(f"Camera {self._id}: Frame shape {frame.shape} != background region shape {background_region.shape}")
+                logger.warning(f"Camera {self._id}: Frame shape {frame.shape} != background region shape {background_region.shape}")
                 return frame
             
             # Convert to signed integer to handle negative results
@@ -124,7 +127,7 @@ class ThorCam(Camera):
             return result
             
         except Exception as e:
-            print(f"Camera {self._id}: Error in background subtraction: {e}")
+            logger.error(f"Camera {self._id}: Error in background subtraction: {e}")
             return frame  # Return original frame on error
 
     def _get_background_region_for_frame(self, frame):
@@ -170,7 +173,7 @@ class ThorCam(Camera):
                 return background_roi
                 
             except Exception as slice_error:
-                print(f"Camera {self._id}: Error with ROI slicing: {slice_error}")
+                logger.error(f"Camera {self._id}: Error with ROI slicing: {slice_error}")
                 
                 # Ultimate fallback: crop from top-left of background to match frame size
                 if (frame_height <= self.background_image.shape[0] and 
@@ -178,11 +181,11 @@ class ThorCam(Camera):
                     background_roi = self.background_image[:frame_height, :frame_width]
                     return background_roi
                 else:
-                    print(f"Camera {self._id}: Cannot crop background - frame larger than background")
+                    logger.error(f"Camera {self._id}: Cannot crop background - frame larger than background")
                     return self.background_image
             
         except Exception as e:
-            print(f"Camera {self._id}: Error extracting background region: {e}")
+            logger.error(f"Camera {self._id}: Error extracting background region: {e}")
             return None
 
     def close(self):
@@ -192,7 +195,7 @@ class ThorCam(Camera):
     def __del__(self):
         self._camera.disarm()
         self._camera.dispose()
-        print(f"Camera {self._id} closed")
+        logger.info(f"Camera {self._id} closed")
 
     def set_exposure_ms(self, exposure):
         self._camera.exposure_time_us = int(exposure*1000)
@@ -224,7 +227,7 @@ class ThorCam(Camera):
             self._camera.arm(2)
             self._camera.issue_software_trigger()
         except Exception as e:
-            print(e)
+            logger.error(f"Camera {self._id}: Error setting ROI: {e}")
 
     def get_ROI(self):
         return (self.roi_x_tl, self.roi_y_tl, self.roi_x_br, self.roi_y_br)
@@ -234,9 +237,9 @@ class ThorCam(Camera):
 
     def stop_stream(self):
         """Stop streaming but keep the camera running"""
-        print(f"Camera {self._id} stopping stream...")
+        logger.info(f"Camera {self._id} stopping stream...")
         self.streamOn = False
-        print(f"Camera {self._id} stream flag set to: {self.streamOn}")
+        logger.debug(f"Camera {self._id} stream flag set to: {self.streamOn}")
 
     def start_stream(self):
         self.streamOn = True
@@ -259,22 +262,22 @@ class ThorCam(Camera):
         # First try to use existing current frame
         if self._image_buffer is not None:
             frame_to_save = self._image_buffer
-            print(f"Camera {self._id}: Using existing frame for save")
+            logger.debug(f"Camera {self._id}: Using existing frame for save")
         else:
             # Try to get a new frame
-            print(f"Camera {self._id}: Getting new frame for save")
+            logger.debug(f"Camera {self._id}: Getting new frame for save")
             frame_to_save = self.get_frame()
         
         # Check if we have a valid frame
         if frame_to_save is None:
-            print(f"Camera {self._id}: No frame available to save")
+            logger.warning(f"Camera {self._id}: No frame available to save")
             return None
         
         # Create directory if it doesn't exist
         try:
             os.makedirs(folder_path, exist_ok=True)
         except Exception as e:
-            print(f"Camera {self._id}: Error creating directory {folder_path}: {e}")
+            logger.error(f"Camera {self._id}: Error creating directory {folder_path}: {e}")
             return None
         
         # Generate timestamp prefix
@@ -302,14 +305,14 @@ class ThorCam(Camera):
                 success = cv2.imwrite(full_path, frame_16bit)
             
             if success:
-                print(f"Camera {self._id}: Image saved to {full_path}")
+                logger.info(f"Camera {self._id}: Image saved to {full_path}")
                 return full_path
             else:
-                print(f"Camera {self._id}: Failed to save image to {full_path}")
+                logger.error(f"Camera {self._id}: Failed to save image to {full_path}")
                 return None
                 
         except Exception as e:
-            print(f"Camera {self._id}: Error saving image: {e}")
+            logger.error(f"Camera {self._id}: Error saving image: {e}")
             return None
 
     def set_background_path(self, background_path):
@@ -323,25 +326,25 @@ class ThorCam(Camera):
             bool: True if background loaded successfully, False otherwise
         """
         if not background_path or not os.path.exists(background_path):
-            print(f"Camera {self._id}: Background path does not exist: {background_path}")
+            logger.warning(f"Camera {self._id}: Background path does not exist: {background_path}")
             return False
         
         try:
             # Load the background image
             background_img = cv2.imread(background_path, cv2.IMREAD_UNCHANGED)
             if background_img is None:
-                print(f"Camera {self._id}: Failed to load background image: {background_path}")
+                logger.error(f"Camera {self._id}: Failed to load background image: {background_path}")
                 return False
             
             # Store the background image and path
             self.background_path = background_path
             self.background_image = background_img
-            print(f"Camera {self._id}: Background image loaded from {background_path}")
-            print(f"Camera {self._id}: Background shape: {background_img.shape}, dtype: {background_img.dtype}")
+            logger.info(f"Camera {self._id}: Background image loaded from {background_path}")
+            logger.debug(f"Camera {self._id}: Background shape: {background_img.shape}, dtype: {background_img.dtype}")
             return True
             
         except Exception as e:
-            print(f"Camera {self._id}: Error loading background image: {e}")
+            logger.error(f"Camera {self._id}: Error loading background image: {e}")
             return False
 
     def set_background_subtraction(self, enable):
@@ -353,7 +356,7 @@ class ThorCam(Camera):
         """
         self.remove_bg = enable
         status = "enabled" if enable else "disabled"
-        print(f"Camera {self._id}: Background subtraction {status}")
+        logger.info(f"Camera {self._id}: Background subtraction {status}")
 
     def get_background_path(self):
         """Get the current background image path."""

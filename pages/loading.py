@@ -7,10 +7,13 @@ from components.CameraInterfaceAIO import CameraInterfaceAIO
 from components.FrequencyGeneratorInterfaceAIO import FrequencyGeneratorInterfaceAIO
 from components.RelayBoardAIO import RelayBoardAIO
 from dash_extensions import WebSocket
+from logger_config import get_logger
 
 from devices import *
 from controllers.sinara.modify_experiment import update_script_values_by_lines
 from controllers.sinara.run_artiq_script import run_artiq_in_clang64_visible
+
+logger = get_logger(__name__)
 
 exp_path = r'C:\Users\CavLev\Documents\Qavity\controllers\sinara\move_particle.py'
 
@@ -93,7 +96,7 @@ def layout():
     prevent_initial_call=True
 )
 def update_and_run_script(n_clicks):
-    print('RUNNING SCRIPT CALLBACK')
+    logger.info('Running script callback')
     script_path_gen = 'C:/Users/CavLev/Documents/Qavity/controllers/sinara/urukul_as_freq_gen.py'
     starting_line = 17
     # if n_clicks is None:
@@ -132,7 +135,7 @@ def update_all_generators(n_clicks):
 )
 def move_particles(btn_clicked, detuning, time):
     # global exp_path
-    print('BUTTON CLICKED')
+    logger.info('Button clicked - moving particles')
     # update_dict = {
     #     15: detuning,
     #     16: time
