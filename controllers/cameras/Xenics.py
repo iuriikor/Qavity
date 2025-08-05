@@ -45,15 +45,15 @@ class Xenics(Camera):
         try:
             self._buffer = self._camera.create_buffer()
             if self._camera.is_initialized:
+                self.sensor_width = self._camera.max_width
+                self.sensor_height = self._camera.max_height
+                self.set_exposure_ms(exposure_ms)
+                self._camera.start_capture()
                 logger.info(f"Camera {self._id} initialized")
             else:
                 logger.error(f"Camera {self._id} initialization failed")
         except XenethAPIException as e:
             logger.error(f"Camera {self._id} initialization error: {e.message}")
-        self.sensor_width = self._camera.max_width
-        self.sensor_height = self._camera.max_height
-        self.set_exposure_ms(exposure_ms)
-        self._camera.start_capture()
 
     def _apply_background_subtraction(self, frame):
         """

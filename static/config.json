@@ -118,5 +118,8 @@
     "save_folder_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img",
     "save_image_name": "loading_chamber_bg.png",
     "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\loading_chamberbg.png"
+  },
+  "cam://0": {
+    "save_image_name": "backplane"
   }
 }
