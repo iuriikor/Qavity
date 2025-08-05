@@ -5,8 +5,11 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_daq as ddaq
 from dash_iconify import DashIconify
+from logger_config import get_logger
 
 from controllers.sinara.run_artiq_script import run_artiq_in_clang64_visible
+
+logger = get_logger(__name__)
 
 # All-in-One Components should be suffixed with 'AIO'
 class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent" component
@@ -70,7 +73,7 @@ class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent"
         # class will share the same variable. This is why we need a way to distinguish between
         # devices that belong to different AIO components by the AIO id.
         FrequencyGeneratorInterfaceAIO._devices[aio_id] = (device, ch)
-        print(self._device.get_device_info())
+        logger.info(f"Device info: {self._device.get_device_info()}")
 
         # Get current output parameters from the generator
         curr_freq = self._device.get_frequency(self._ch)
@@ -78,14 +81,14 @@ class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent"
         try:
             curr_phase = self._device.get_phase(self._ch)
         except Exception as e:
-            print(f"Generator does not have this function, {str(e)}")
+            logger.warning(f"Generator does not have this function, {str(e)}")
             curr_phase = 0
 
         if is_urukul:
             try:
                 self.curr_att = self._device.get_att(self._ch)
             except Exception as e:
-                print(f'Generator does not have this function, {str(e)}')
+                logger.warning(f'Generator does not have this function, {str(e)}')
                 curr_att = 0.0
 
         output_is_on =  self._device.get_output_state(self._ch)
@@ -155,14 +158,14 @@ class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent"
         prevent_initial_call=True
     )
     def update_frequency(freq):
-        print("FREQUENCY CHANGE CALLBACK WAS STARTED")
+        logger.debug("Frequency change callback started")
         # Get the aio_id from the triggered component
         aio_id = FrequencyGeneratorInterfaceAIO.get_aio_id_from_trigger()
 
         # Get the device and channel
         device, ch = FrequencyGeneratorInterfaceAIO._devices[aio_id]
 
-        print(f"FREQUENCY UPDATED to {freq} Hz for device {aio_id}, channel {ch}")
+        logger.debug(f"Frequency updated to {freq} Hz for device {aio_id}, channel {ch}")
         device.set_frequency(freq, ch)
         return False
 
@@ -172,14 +175,14 @@ class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent"
         prevent_initial_call=True
     )
     def update_amplitude(amp):
-        print("AMPLITUDE CHANGE CALLBACK WAS STARTED")
+        logger.debug("Amplitude change callback started")
         # Get the aio_id from the triggered component
         aio_id = FrequencyGeneratorInterfaceAIO.get_aio_id_from_trigger()
 
         # Get the device and channel
         device, ch = FrequencyGeneratorInterfaceAIO._devices[aio_id]
 
-        print(f"AMPLITUDE UPDATED to {amp} dBm for device {aio_id}, channel {ch}")
+        logger.debug(f"Amplitude updated to {amp} dBm for device {aio_id}, channel {ch}")
         device.set_amplitude(amp, ch)
         return False
 
@@ -196,10 +199,10 @@ class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent"
         device, ch = FrequencyGeneratorInterfaceAIO._devices[aio_id]
 
         try:
-            print(f"PHASE UPDATED to {phase}° for device {aio_id}, channel {ch}")
+            logger.debug(f"Phase updated to {phase}° for device {aio_id}, channel {ch}")
             device.set_phase(phase, ch)
         except Exception as e:
-            print(f"Failed to set phase: {str(e)}")
+            logger.error(f"Failed to set phase: {str(e)}")
         return False
 
     @callback(
@@ -214,7 +217,7 @@ class FrequencyGeneratorInterfaceAIO(html.Div):  # html.Div will be the "parent"
         # Get the device and channel
         device, ch = FrequencyGeneratorInterfaceAIO._devices[aio_id]
 
-        print(f"OUTPUT {'ON' if is_on else 'OFF'} for device {aio_id}, channel {ch}")
+        logger.debug(f"Output {'ON' if is_on else 'OFF'} for device {aio_id}, channel {ch}")
         if is_on:
             device.output_on(ch)
         else:

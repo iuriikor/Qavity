@@ -4,6 +4,9 @@ import json
 import dash_core_components as dcc
 import dash_mantine_components as dmc
 from config import config, update_config  # Import the config
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 from controllers.picoscope.ps5000a_wrapper import PicoInterface
 
@@ -349,16 +352,16 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         if is_checked:
             # Open the device first
             success = device.open()
-            print(f"Opening PicoScope connection: {'Success' if success else 'Failed'}")
+            logger.info(f"Opening PicoScope connection: {'Success' if success else 'Failed'}")
 
             if success:
                 # Apply all configuration from AIO interface
-                print("Applying AIO configuration to device...")
+                logger.info("Applying AIO configuration to device...")
 
                 # 1. Set resolution
                 if resolution is not None:
                     device.set_resolution(int(resolution))
-                    print(f"Applied resolution: {resolution} bits")
+                    logger.debug(f"Applied resolution: {resolution} bits")
 
                 # 2. Configure channels
                 channels = ['A', 'B', 'C', 'D']
@@ -372,7 +375,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
                         enabled=enabled,
                         voltage_range=voltage_range
                     )
-                    print(f"Applied Channel {channel}: {'enabled' if enabled else 'disabled'}, range: {voltage_range}V")
+                    logger.debug(f"Applied Channel {channel}: {'enabled' if enabled else 'disabled'}, range: {voltage_range}V")
 
                 # 3. Set sampling frequency and time and get actual value
                 actual_freq_mhz = freq_mhz
@@ -381,16 +384,16 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
                     sampling_period = 1/freq_hz
                     actual_sampling_period, num_samples = device.set_sampling_period(sampling_period, acq_time)
                     actual_freq_mhz = 1/actual_sampling_period/1e06 if actual_sampling_period > 0 else freq_mhz
-                    print(f"Applied sampling frequency: {freq_mhz} MHz, actual: {actual_freq_mhz} MHz")
+                    logger.debug(f"Applied sampling frequency: {freq_mhz} MHz, actual: {actual_freq_mhz} MHz")
 
-                print("Device configuration complete!")
+                logger.info("Device configuration complete!")
                 return success, actual_freq_mhz, acq_time
             else:
                 return False, freq_mhz, acq_time
 
         else:
             success = device.close()
-            print(f"Closing PicoScope connection: {'Success' if success else 'Failed'}")
+            logger.info(f"Closing PicoScope connection: {'Success' if success else 'Failed'}")
             return not success, freq_mhz, acq_time
 
     # Single callback for ALL channel on/off states
@@ -412,7 +415,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
                 channel = channels[i]
                 current_range = device.channel_ranges.get(channel, 5)
                 device.set_channel(channel, enabled=state, voltage_range=current_range)
-                print(f"Channel {channel} {'enabled' if state else 'disabled'}")
+                logger.debug(f"Channel {channel} {'enabled' if state else 'disabled'}")
 
                 # Update the config data if needed
                 if current_config and device.get_name() in current_config:
@@ -443,7 +446,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
                 # Only update if channel is enabled
                 if device.channels_enabled.get(channel, False):
                     device.set_channel(channel, enabled=True, voltage_range=float(voltage_range))
-                    print(f"Channel {channel} range set to {voltage_range}V")
+                    logger.debug(f"Channel {channel} range set to {voltage_range}V")
 
                     # Update the config data if needed
                     if current_config and device.get_name() in current_config:
@@ -467,7 +470,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
 
         if resolution is not None:
             success = device.set_resolution(int(resolution))
-            print(f"Resolution set to {resolution} bits: {'Success' if success else 'Failed'}")
+            logger.debug(f"Resolution set to {resolution} bits: {'Success' if success else 'Failed'}")
 
             # Update the config data if needed
             if success and current_config and device.get_name() in current_config:
@@ -523,9 +526,9 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
                 # Save to config file
                 update_config({device.get_name(): current_config[device.get_name()]})
             except json.JSONDecodeError:
-                print(f"Invalid JSON format in comments: {comments}")
+                logger.error(f"Invalid JSON format in comments: {comments}")
             except Exception as e:
-                print(f"Error processing comments: {e}")
+                logger.error(f"Error processing comments: {e}")
         
         return current_config
     
@@ -567,7 +570,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
             # return actual_freq_mhz
             actual_sampling_rate, num_samples = device.set_sampling_period(1/freq_hz, acq_time_s)
             actual_freq_mhz = 1/actual_sampling_rate / 1e06
-            print(f"Sampling frequency set to {freq_mhz} MHz, actual: {actual_freq_mhz} MHz")
+            logger.debug(f"Sampling frequency set to {freq_mhz} MHz, actual: {actual_freq_mhz} MHz")
             return actual_freq_mhz
 
         return freq_mhz
@@ -667,7 +670,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         if all_config_metadata:
             metadata.update(all_config_metadata)
 
-        print(f"Starting streaming acquisition...")
+        logger.info(f"Starting streaming acquisition...")
         result = device.run_streaming(
             data_dir=data_path,
             filename=measurement_name,
@@ -676,10 +679,10 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         )
 
         if result is not None or (data_path and measurement_name):
-            print("Streaming completed successfully")
+            logger.info("Streaming completed successfully")
             return 'Stream Complete', current_config
         else:
-            print("Streaming failed")
+            logger.error("Streaming failed")
             return 'Stream Failed', current_config
 
     # Arm trigger callback
@@ -763,7 +766,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
         if num_chunks is None or num_chunks < 1:
             num_chunks = 1
 
-        print(f"Arming trigger for {num_chunks} block acquisitions...")
+        logger.info(f"Arming trigger for {num_chunks} block acquisitions...")
         device.set_trigger(channel='A', threshold=1.0, direction='Rising',
                            delay=0, auto_trigger=False, timeout_ms=1000)
         success = device.run_multi_block_acquisition(

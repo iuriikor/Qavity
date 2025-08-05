@@ -4,6 +4,9 @@ import json
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
 import dash_daq as daq
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 # All-in-One Components should be suffixed with 'AIO'
 class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
@@ -128,7 +131,7 @@ class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
         device= RelayBoardAIO._devices[aio_id]
         try:
             if btn_checked:
-                print(f"Pumping down")
+                logger.info("Pumping down")
                 device.close_port(port_name="Load")
                 # Double check that the spraying port is now closed
                 spray_isopen = device.get_port_state("Load")
@@ -136,10 +139,10 @@ class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
                     device.open_port(port_name="Pump")
                 return ""
             else:
-                print("Closing pumping port")
+                logger.info("Closing pumping port")
                 device.close_port(port_name="Pump")
         except Exception as e:
-            print(f"Failed to change pumping state: {str(e)}")
+            logger.error(f"Failed to change pumping state: {str(e)}")
             return ""
 
     @callback(
@@ -154,7 +157,7 @@ class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
         device = RelayBoardAIO._devices[aio_id]
         try:
             if btn_checked: # If the new state of the button is active, ie we want to start spraying
-                print(f"Loading particles")
+                logger.info("Loading particles")
                 # Get state of pumping port
                 pump_isopen = device.get_port_state("Pump")
                 if pump_isopen is not None: # Check if the state is valid
@@ -167,11 +170,11 @@ class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
                     device.open_port(port_name="Load") # Spray
                 return ""
             else:
-                print("Closing spray port")
+                logger.info("Closing spray port")
                 device.close_port(port_name="Load")  # Stop spraying
                 return ""
         except Exception as e:
-            print(f"Failed to start pumping: {str(e)}")
+            logger.error(f"Failed to start pumping: {str(e)}")
             return ""
 
     @callback(
@@ -193,5 +196,5 @@ class RelayBoardAIO(html.Div):  # html.Div will be the "parent" component
             device.load_for_nseconds(loading_time)
             return ""
         except Exception as e:
-            print(f"Failed to start pumping: {str(e)}")
+            logger.error(f"Failed to start pumping: {str(e)}")
         return ""

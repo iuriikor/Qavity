@@ -6,6 +6,9 @@ import dash_core_components as dcc
 
 from controllers.sinara.run_artiq_script import run_artiq_in_clang64_visible
 from config import config, update_config
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 # All-in-One Components should be suffixed with 'AIO'
 class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
@@ -119,7 +122,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         # class will share the same variable. This is why we need a way to distinguish between
         # devices that belong to different AIO components by the AIO id.
         CavityDriveAIO._devices[aio_id] = (device, ch)
-        print(self._device.get_device_info())
+        logger.info(f"Device info: {self._device.get_device_info()}")
 
         # Load module-specific properties
         module_props = config.get(name, {})
@@ -257,7 +260,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         # Get the device and channel
         device, ch = CavityDriveAIO._devices[aio_id]
 
-        print(f"FREQUENCY UPDATED to {freq} kHz for device {aio_id}, channel {ch}")
+        logger.debug(f"Frequency updated to {freq} kHz for device {aio_id}, channel {ch}")
         device.set_frequency(freq*1e03, ch)
         device.set_ramp_starting_freq(freq)
         return False
@@ -341,12 +344,12 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
             # Calculate the final ramp frequency
             final_freq = tem00_tem01_spacing - 100000 - target_detuning
             
-            print(f"Set detuning button pressed: using detuning {target_detuning} kHz, final freq = {final_freq} kHz")
+            logger.debug(f"Set detuning button pressed: using detuning {target_detuning} kHz, final freq = {final_freq} kHz")
             
             return final_freq, False
             
         except (ValueError, TypeError) as e:
-            print(f"Error calculating detuning frequency: {e}")
+            logger.error(f"Error calculating detuning frequency: {e}")
             return no_update, no_update
 
     @callback(
@@ -367,7 +370,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         # Get the device and channel
         device, ch = CavityDriveAIO._devices[aio_id]
 
-        print(f"AMPLITUDE UPDATED to {attenuation} dBm for device {aio_id}, channel {ch}")
+        logger.debug(f"Amplitude updated to {attenuation} dBm for device {aio_id}, channel {ch}")
         device.set_attenuation(attenuation, ch)
         return False
 
@@ -389,7 +392,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         # Get the device and channel
         device, ch = CavityDriveAIO._devices[aio_id]
 
-        print(f"OUTPUT {'ON' if is_on else 'OFF'} f2or device {aio_id}, channel {ch}")
+        logger.debug(f"Output {'ON' if is_on else 'OFF'} for device {aio_id}, channel {ch}")
         if is_on:
             device.output_on(ch)
         else:
@@ -472,7 +475,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         :return:
         """
         if not script_isuptodate:
-            print("Must update script before running")
+            logger.warning("Must update script before running")
             return ""
         else:
             # Get the aio_id from the triggered component
@@ -502,7 +505,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         # Get the device and channel
         device, ch = CavityDriveAIO._devices[aio_id]
 
-        print(f"END FREQUENCY UPDATED to {freq} Hz for device {aio_id}, channel {ch}")
+        logger.debug(f"End frequency updated to {freq} Hz for device {aio_id}, channel {ch}")
         device.set_ramp_ending_freq(freq)
         return False
 
@@ -524,7 +527,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         # Get the device and channel
         device, ch = CavityDriveAIO._devices[aio_id]
 
-        print(f"FREQUENCY STEP UPDATED to {freq_step} Hz for device {aio_id}, channel {ch}")
+        logger.debug(f"Frequency step updated to {freq_step} Hz for device {aio_id}, channel {ch}")
         device.set_ramp_step(freq_step)
         return False
 
@@ -546,7 +549,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
         # Get the device and channel
         device, ch = CavityDriveAIO._devices[aio_id]
 
-        print(f"FREQUENCY STEP DELAY UPDATED to {delay} s for device {aio_id}, channel {ch}")
+        logger.debug(f"Frequency step delay updated to {delay} s for device {aio_id}, channel {ch}")
         device.set_ramp_delay(delay)
         return False
 
@@ -561,7 +564,7 @@ class CavityDriveAIO(html.Div):  # html.Div will be the "parent" component
     )
     def run_ramp(n_clicks, script_isuptodate):
         if not script_isuptodate:
-            print("Must update script before running")
+            logger.warning("Must update script before running")
             return  no_update
         else:
             # Get the aio_id from the triggered component
