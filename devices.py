@@ -38,9 +38,13 @@ thorcam_2.initialize(10, 20, rotate_img=True)
 # xenics_cam = Xenics(xenics_url)
 # xenics_cam.initialize(1, 0.01)
 # CAMERA STREAMERS (sockets)
-time.sleep(0.1)
+print("Initializing camera streamers...")
+time.sleep(0.2)  # Allow cameras to fully initialize
 streamer1 = WebcamStreamer(thorcam_1, "/stream1")
+print("Streamer 1 initialized, waiting before creating streamer 2...")
+time.sleep(0.5)  # Small delay between streamer initializations
 streamer2 = WebcamStreamer(thorcam_2, "/stream2")
+print("Both streamers initialized successfully")
 # streamer3 = WebcamStreamer(xenics_cam, "/stream3")
 
 # FREQUENCY GENERATORS

@@ -8,6 +8,7 @@ import dash_mantine_components as dmc
 from server import app, webcam_server, dash_server
 from devices import daq_card
 from app import make_layout
+from controllers.streamer import verify_all_streamers_ready, print_streamer_info
 
 if __name__ == '__main__':
     try:
@@ -41,6 +42,10 @@ if __name__ == '__main__':
 
         # Configure Hypercorn for the WebSocket server
         async def start_hypercorn():
+            # Print streamer information and verify endpoints
+            print_streamer_info()
+            await verify_all_streamers_ready()
+            
             # Hypercorn configuration
             config = Config()
             config.bind = ["127.0.0.1:5000"]  # Standard port for Quart
