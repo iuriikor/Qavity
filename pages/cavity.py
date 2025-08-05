@@ -8,6 +8,7 @@ from components.CameraInterfaceAIO import CameraInterfaceAIO
 from devices import pico, mirny_cavity_drive, xenics_cam, streamer3
 from components.PicoscopeInterfaceAIO import PicoscopeInterfaceAIO
 from components.CavityDriveAIO import CavityDriveAIO
+from dash_extensions import WebSocket
 
 # Register this as a Dash page
 dash.register_page(__name__, path='/cavity')
@@ -28,5 +29,6 @@ def layout():
             cavity_drive_interface,
             pico_interface,
             backplane_camera_interface,
+            WebSocket(url=f"ws://127.0.0.1:5000/stream3", id="ws3"),
         ], direction='row', wrap='wrap')
     ])
