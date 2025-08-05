@@ -112,5 +112,11 @@
       "Frequency step kHz": 1,
       "Delay seconds": 0.01
     }
+  },
+  "14440": {
+    "background_subtraction_enabled": false,
+    "save_folder_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img",
+    "save_image_name": "loading_chamber_bg.png",
+    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\loading_chamberbg.png"
   }
 }
