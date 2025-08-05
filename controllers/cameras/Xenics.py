@@ -181,7 +181,11 @@ class Xenics(Camera):
                     processed_frame = self._apply_background_subtraction(img)
                 else:
                     processed_frame = img
-                return processed_frame
+                
+                # Convert 16-bit to 8-bit for streaming display
+                # Use the full dynamic range of the current frame
+                display_frame = cv2.normalize(processed_frame, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                return display_frame
             else:
                 return None
         else:
