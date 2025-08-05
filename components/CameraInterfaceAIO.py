@@ -5,6 +5,9 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
 from config import config, update_config  # Import the config
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 # All-in-One Components should be suffixed with 'AIO'
 class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
@@ -262,7 +265,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         ], withBorder=True, py="xs", inheritPadding=True)
 
         if camera is None:
-            print("CAMERA NOT FOUND - USING PLACEHOLDER")
+            logger.warning("Camera not found - using placeholder")
             camera_screen = html.Img(src=self._placeholder, id=self.ids.htmlImg(aio_id), 
                                      **htmlImg_props)
         else:
@@ -291,16 +294,16 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         prevent_initial_call=True
     )
     def start_stream(n_clicks):
-        print('STARTING STREAM CALLBACK')
+        logger.info('Starting stream callback')
         # Get the aio_id from the triggered component
         aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
         # Get the device and channel
         try:
             camera, streamer = CameraInterfaceAIO._devices[aio_id]
         except Exception as e:
-            print(f'Camera using placeholder: {e}')
+            logger.warning(f'Camera using placeholder: {e}')
             return ''
-        print(f'Camera {aio_id} starting stream')
+        logger.info(f'Camera {aio_id} starting stream')
         camera.start_stream()
         # streamer.stream()
         return ''
@@ -317,9 +320,9 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         try:
             camera, streamer = CameraInterfaceAIO._devices[aio_id]
         except Exception as e:
-            print(f'Camera using placeholder: {e}')
+            logger.warning(f'Camera using placeholder: {e}')
             return ''
-        print(f'Camera {aio_id} starting stream')
+        logger.info(f'Camera {aio_id} starting stream')
         camera.stop_stream()
         return ''
 

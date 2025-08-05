@@ -1,5 +1,8 @@
 import os
 import time
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 from controllers.frequency_generators.Mirny import MirnyFrequencyGenerator
 
@@ -38,13 +41,13 @@ thorcam_2.initialize(10, 20, rotate_img=True)
 # xenics_cam = Xenics(xenics_url)
 # xenics_cam.initialize(1, 0.01)
 # CAMERA STREAMERS (sockets)
-print("Initializing camera streamers...")
+logger.info("Initializing camera streamers...")
 time.sleep(0.2)  # Allow cameras to fully initialize
 streamer1 = WebcamStreamer(thorcam_1, "/stream1")
-print("Streamer 1 initialized, waiting before creating streamer 2...")
+logger.info("Streamer 1 initialized, waiting before creating streamer 2...")
 time.sleep(0.5)  # Small delay between streamer initializations
 streamer2 = WebcamStreamer(thorcam_2, "/stream2")
-print("Both streamers initialized successfully")
+logger.info("Both streamers initialized successfully")
 # streamer3 = WebcamStreamer(xenics_cam, "/stream3")
 
 # FREQUENCY GENERATORS
@@ -97,13 +100,13 @@ def get_daq_diagnostics():
     """
     stats = daq_streamer.get_timing_stats()
     if stats:
-        print("=== DAQ Performance Diagnostics ===")
-        print(f"Average acquisition time: {stats['avg_acquisition_time_ms']:.2f}ms")
-        print(f"Average transmission time: {stats['avg_transmission_time_ms']:.2f}ms")
-        print(f"Average data size: {stats['avg_data_size_kb']:.1f}KB")
-        print(f"Buffer length: {stats['buffer_length']} samples")
-        print(f"Sample count: {stats['sample_count']}")
+        logger.info("=== DAQ Performance Diagnostics ===")
+        logger.info(f"Average acquisition time: {stats['avg_acquisition_time_ms']:.2f}ms")
+        logger.info(f"Average transmission time: {stats['avg_transmission_time_ms']:.2f}ms")
+        logger.info(f"Average data size: {stats['avg_data_size_kb']:.1f}KB")
+        logger.info(f"Buffer length: {stats['buffer_length']} samples")
+        logger.info(f"Sample count: {stats['sample_count']}")
         return stats
     else:
-        print("No DAQ timing statistics available yet.")
+        logger.info("No DAQ timing statistics available yet.")
         return None

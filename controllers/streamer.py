@@ -3,7 +3,9 @@ from server import webcam_server
 import asyncio
 import base64
 import cv2
+from logger_config import get_logger
 
+logger = get_logger(__name__)
 
 # Global registry to track all registered streamers
 _registered_streamers = []
@@ -16,21 +18,21 @@ class WebcamStreamer:
         self._register_endpoint()
         # Add to global registry
         _registered_streamers.append(self)
-        print(f"WebcamStreamer initialized for camera {self._camera.id} on path {self._path}")
+        logger.info(f"WebcamStreamer initialized for camera {self._camera.id} on path {self._path}")
 
     def _register_endpoint(self):
         """Register the websocket route once during initialization"""
         
         @webcam_server.websocket(self._path, endpoint=self._camera.id)
         async def stream_handler():
-            print(f'CAMERA {self._camera.id} WEBSOCKET CONNECTED')
+            logger.info(f'Camera {self._camera.id} WebSocket connected')
             
             # Send an initial ping to establish the connection properly
             try:
                 await websocket.send(b'ping')
-                print(f'CAMERA {self._camera.id} WEBSOCKET PING SENT')
+                logger.debug(f'Camera {self._camera.id} WebSocket ping sent')
             except Exception as e:
-                print(f'CAMERA {self._camera.id} WEBSOCKET PING FAILED: {e}')
+                logger.error(f'Camera {self._camera.id} WebSocket ping failed: {e}')
 
             try:
                 while True:
@@ -42,30 +44,29 @@ class WebcamStreamer:
                     # Streaming is active, get and send frames
                     frame = self._camera.get_frame()
                     if frame is None:
-                        print('STREAMER: FRAME IS NONE')
+                        logger.debug('Streamer: Frame is None')
                         # If no frame available, wait briefly before retrying
                         await asyncio.sleep(0.1)
                         continue
                         
                     if frame is not None:
-                        # print('STREAMER SIDE: FRAME IS NOT NONE')
                         _, jpeg = cv2.imencode('.jpg', frame)
                         await websocket.send(jpeg.tobytes())
                         jpeg = None
                         
                     await asyncio.sleep(1 / self._camera.framerate)
             except asyncio.CancelledError:
-                print(f'CAMERA {self._camera.id} WEBSOCKET DISCONNECTED')
+                logger.info(f'Camera {self._camera.id} WebSocket disconnected')
             except Exception as e:
-                print(f'ERROR IN STREAM: {str(e)}')
+                logger.error(f'Error in stream: {str(e)}')
                 import traceback
                 traceback.print_exc()
             finally:
-                print(f'CAMERA {self._camera.id} STREAM HANDLER EXITED')
+                logger.debug(f'Camera {self._camera.id} stream handler exited')
 
     def stream(self):
         """Start streaming"""
-        print(f'STARTING CAMERA {self._camera.id} STREAM')
+        logger.info(f'Starting camera {self._camera.id} stream')
         self._camera.streamOn = True
 
 
@@ -76,15 +77,15 @@ def get_registered_streamers():
 
 def print_streamer_info():
     """Print information about all registered streamers"""
-    print(f"Total registered streamers: {len(_registered_streamers)}")
+    logger.info(f"Total registered streamers: {len(_registered_streamers)}")
     for i, streamer in enumerate(_registered_streamers):
-        print(f"  Streamer {i+1}: Camera {streamer._camera.id} on path {streamer._path}")
+        logger.info(f"  Streamer {i+1}: Camera {streamer._camera.id} on path {streamer._path}")
 
 
 # Function to verify all streamers are ready
 async def verify_all_streamers_ready():
     """Verify that all WebSocket endpoints are properly registered"""
-    print("Verifying WebSocket endpoints are ready...")
+    logger.info("Verifying WebSocket endpoints are ready...")
     
     # List all registered routes in the webcam_server
     routes = []
@@ -92,10 +93,10 @@ async def verify_all_streamers_ready():
         if rule.websocket:
             routes.append(rule.rule)
     
-    print(f"Registered WebSocket routes: {routes}")
+    logger.info(f"Registered WebSocket routes: {routes}")
     
     for streamer in _registered_streamers:
         if streamer._path in routes:
-            print(f"✓ Endpoint {streamer._path} for camera {streamer._camera.id} is registered")
+            logger.info(f"✓ Endpoint {streamer._path} for camera {streamer._camera.id} is registered")
         else:
-            print(f"✗ Endpoint {streamer._path} for camera {streamer._camera.id} is NOT registered")
+            logger.warning(f"✗ Endpoint {streamer._path} for camera {streamer._camera.id} is NOT registered")

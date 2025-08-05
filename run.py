@@ -5,10 +5,15 @@ from hypercorn.config import Config
 from hypercorn.asyncio import serve as hypercorn_serve
 
 import dash_mantine_components as dmc
+from logger_config import setup_logging, get_logger
 from server import app, webcam_server, dash_server
 from devices import daq_card
 from app import make_layout
 from controllers.streamer import verify_all_streamers_ready, print_streamer_info
+
+# Setup logging before everything else
+setup_logging()
+logger = get_logger(__name__)
 
 if __name__ == '__main__':
     try:
@@ -36,7 +41,7 @@ if __name__ == '__main__':
             cherrypy.tree.graft(dash_server, '/')
 
             # Start CherryPy engine
-            print(f"Starting CherryPy server on {cherrypy_config["server.socket_host"]}:{cherrypy_config["server.socket_port"]}")
+            logger.info(f"Starting CherryPy server on {cherrypy_config['server.socket_host']}:{cherrypy_config['server.socket_port']}")
             cherrypy.engine.start()
 
 
@@ -56,7 +61,7 @@ if __name__ == '__main__':
             config.websocket_timeout = 300  # 5 minutes timeout for WebSockets
 
             # Start Hypercorn with Quart
-            print(f"Starting Hypercorn WebSocket server on {config.bind}")
+            logger.info(f"Starting Hypercorn WebSocket server on {config.bind}")
             await hypercorn_serve(webcam_server, config)
 
 
@@ -70,19 +75,18 @@ if __name__ == '__main__':
         asyncio.run(start_hypercorn())
 
     except KeyboardInterrupt:
-        print("Interrupted by user, shutting down...")
+        logger.info("Interrupted by user, shutting down...")
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         import traceback
-
         traceback.print_exc()
     finally:
         # Clean up resources
-        print("Stopping CherryPy server...")
+        logger.info("Stopping CherryPy server...")
         if cherrypy.engine.state in (cherrypy.engine.states.STARTED, cherrypy.engine.states.STARTING):
             cherrypy.engine.stop()
 
-        print("Closing DAQ resources...")
+        logger.info("Closing DAQ resources...")
         daq_card.close()
 
-        print("Servers stopped, all resources released.")
+        logger.info("Servers stopped, all resources released.")
