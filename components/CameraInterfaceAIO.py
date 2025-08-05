@@ -135,8 +135,16 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         # Handle camera properties (exposure and ROI)
         if camera is not None:
             default_exp = camera.get_exposure_ms()
-            # Get current ROI values or use full sensor as default
-            if hasattr(camera, 'get_ROI') and camera.get_ROI()[0] is not None:
+            
+            # Load ROI values from config first, then fall back to camera or defaults
+            if 'roi' in self.camera_config:
+                roi_config = self.camera_config['roi']
+                roi_x_tl = roi_config.get('x_tl', 0)
+                roi_y_tl = roi_config.get('y_tl', 0)
+                roi_x_br = roi_config.get('x_br', camera.sensor_width - 1)
+                roi_y_br = roi_config.get('y_br', camera.sensor_height - 1)
+            elif hasattr(camera, 'get_ROI') and camera.get_ROI()[0] is not None:
+                # Get current ROI values from camera
                 roi_x_tl, roi_y_tl, roi_x_br, roi_y_br = camera.get_ROI()
             else:
                 # Default to full sensor
@@ -198,10 +206,12 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                             dmc.NumberInput(value=roi_x_tl, debounce=True, placeholder="X",
                                           w=100, min=0,
                                           max=camera.sensor_width-1 if camera else 4095,
+                                          persistence=True, persistence_type='local',
                                           id=self.ids.roi_x_tl(aio_id)),
                             dmc.NumberInput(value=roi_y_tl, debounce=True, placeholder="Y",
                                           w=100, min=0,
                                           max=camera.sensor_height-1 if camera else 4095,
+                                          persistence=True, persistence_type='local',
                                           id=self.ids.roi_y_tl(aio_id))
                         ], gap="xs", align="center")
                     ], direction="column")
@@ -214,10 +224,12 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                             dmc.NumberInput(value=roi_x_br, debounce=True, placeholder="X",
                                           w=100, min=0,
                                           max=camera.sensor_width-1 if camera else 4095,
+                                          persistence=True, persistence_type='local',
                                           id=self.ids.roi_x_br(aio_id)),
                             dmc.NumberInput(value=roi_y_br, debounce=True, placeholder="Y",
                                           w=100, min=0,
                                           max=camera.sensor_height-1 if camera else 4095,
+                                          persistence=True, persistence_type='local',
                                           id=self.ids.roi_y_br(aio_id))
                         ], gap="xs", align="center")
                     ], direction="column")
@@ -366,38 +378,54 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         try:
             camera, _ = CameraInterfaceAIO._devices[aio_id]
         except Exception as e:
-            print(f'Camera using placeholder: {str(e)}')
+            logger.warning(f'Camera using placeholder: {str(e)}')
             return ''
         
         # Validate ROI values
         if None in [x_tl, y_tl, x_br, y_br]:
-            print(f'Camera {aio_id}: ROI values cannot be None')
+            logger.warning(f'Camera {aio_id}: ROI values cannot be None')
             return ''
         
         # Check bounds against sensor dimensions
         if not (0 <= x_tl < camera.sensor_width and 0 <= x_br < camera.sensor_width):
-            print(f'Camera {aio_id}: X coordinates must be between 0 and {camera.sensor_width-1}')
+            logger.warning(f'Camera {aio_id}: X coordinates must be between 0 and {camera.sensor_width-1}')
             return ''
             
         if not (0 <= y_tl < camera.sensor_height and 0 <= y_br < camera.sensor_height):
-            print(f'Camera {aio_id}: Y coordinates must be between 0 and {camera.sensor_height-1}')
+            logger.warning(f'Camera {aio_id}: Y coordinates must be between 0 and {camera.sensor_height-1}')
             return ''
         
         # Check that top-left is actually top-left of bottom-right
         if x_tl >= x_br:
-            print(f'Camera {aio_id}: Top-left X ({x_tl}) must be less than bottom-right X ({x_br})')
+            logger.warning(f'Camera {aio_id}: Top-left X ({x_tl}) must be less than bottom-right X ({x_br})')
             return ''
             
         if y_tl >= y_br:
-            print(f'Camera {aio_id}: Top-left Y ({y_tl}) must be less than bottom-right Y ({y_br})')
+            logger.warning(f'Camera {aio_id}: Top-left Y ({y_tl}) must be less than bottom-right Y ({y_br})')
             return ''
         
         # All validation passed, set the ROI
         try:
             camera.set_ROI(x_tl, y_tl, x_br, y_br)
-            print(f'Camera {aio_id}: ROI set to ({x_tl}, {y_tl}) - ({x_br}, {y_br})')
+            logger.info(f'Camera {aio_id}: ROI set to ({x_tl}, {y_tl}) - ({x_br}, {y_br})')
+            
+            # Save ROI values to config
+            camera_id = str(camera._id)
+            roi_config = {
+                camera_id: {
+                    'roi': {
+                        'x_tl': x_tl,
+                        'y_tl': y_tl,
+                        'x_br': x_br,
+                        'y_br': y_br
+                    }
+                }
+            }
+            update_config(roi_config)
+            logger.debug(f'Camera {aio_id}: ROI values saved to config')
+            
         except Exception as e:
-            print(f'Camera {aio_id}: Error setting ROI: {str(e)}')
+            logger.error(f'Camera {aio_id}: Error setting ROI: {str(e)}')
         
         return ''
 
