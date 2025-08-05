@@ -120,6 +120,9 @@
     "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\loading_chamberbg.png"
   },
   "cam://0": {
-    "save_image_name": "backplane"
+    "save_image_name": "backplane",
+    "save_folder_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img",
+    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\bg.png",
+    "background_subtraction_enabled": false
   }
 }

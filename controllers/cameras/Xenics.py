@@ -247,8 +247,8 @@ class Xenics(Camera):
         self.roi_x_br = int(lower_right_x_pixels)
         self.roi_y_br = int(lower_right_y_pixels)
         # Convert to Xenics format of Window of interest, which is offset and width or height
-        offset_x = int((self.roi_x_br - self.roi_x_tl)/2)
-        offset_y = int((self.roi_y_br - self.roi_y_tl)/2)
+        offset_x = self.roi_x_tl
+        offset_y = self.roi_y_tl
         width_x = self.roi_x_br - self.roi_x_tl
         height_y = self.roi_y_br - self.roi_y_tl
         try:
@@ -257,7 +257,7 @@ class Xenics(Camera):
             self._camera.set_property_value("OffsetY", offset_y)
             self._camera.set_property_value("Height", height_y)
             # Arm again
-            self._camera.create_buffer()
+            self._buffer = self._camera.create_buffer()
         except Exception as e:
             logger.error(f"Camera {self._id}: Error setting ROI: {e}")
 
@@ -282,7 +282,8 @@ class Xenics(Camera):
         else:
             # Try to get a new frame
             logger.debug(f"Camera {self._id}: Getting new frame for save")
-            frame_to_save = self.get_frame()
+            self._camera.get_frame(self._buffer, flags=XGetFrameFlags.XGF_Blocking)
+            frame_to_save = cv2.normalize(self._buffer.image_data, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
 
         # Check if we have a valid frame
         if frame_to_save is None:
