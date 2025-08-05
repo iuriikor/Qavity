@@ -16,19 +16,27 @@ class Xenics(Camera):
     def __init__(self, cam_id, framerate=10, exposure_ms=1):
         super().__init__(cam_id)
         self._buffer = None
+        # Initialize background subtraction variables
+        self.background_image = None
+        self.background_path = None
+        self.remove_bg = False
+        self.roi_x_tl = None
+        self.roi_y_tl = None
+        self.roi_x_br = None
+        self.roi_y_br = None
         try:
             self._camera = XCamera()
             self._camera.open(cam_id)
-            print(f"Opened connection to Xenics camera, ID {self._id}")
+            logger.info(f"Opened connection to Xenics camera, ID {self._id}")
         except XenethAPIException as e:
-            print(e.message)
+            logger.error(f"Xenics camera error: {e.message}")
 
     def __enter__(self):
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
         if exception_type is not None:
-            print(exception_traceback)
+            logger.error(f"Exception: {exception_traceback}")
         self.close()
         return True if exception_type is None else False
 
@@ -37,11 +45,11 @@ class Xenics(Camera):
         try:
             self._buffer = self._camera.create_buffer()
             if self._camera.is_initialized:
-                print("Camera Initialized")
+                logger.info(f"Camera {self._id} initialized")
             else:
-                print("Initialization failed")
+                logger.error(f"Camera {self._id} initialization failed")
         except XenethAPIException as e:
-            print(e.message)
+            logger.error(f"Camera {self._id} initialization error: {e.message}")
         self.sensor_width = self._camera.max_width
         self.sensor_height = self._camera.max_height
         self.set_exposure_ms(exposure_ms)
@@ -162,11 +170,11 @@ class Xenics(Camera):
 
 
     def get_frame(self):
-        print('XENICS: getting frame')
+        logger.debug('XENICS: getting frame')
         if self._buffer is not None:
-            print('XENICS: buffer initialized correctly')
+            logger.debug('XENICS: buffer initialized correctly')
             if self._camera.get_frame(self._buffer, flags=XGetFrameFlags.XGF_Blocking):
-                print('XENICS: image acquired and not None')
+                logger.debug('XENICS: image acquired and not None')
                 img = cv2.normalize(self._buffer.image_data, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
                 # Apply background subtraction if enabled
                 if self.remove_bg and self.background_image is not None:
@@ -182,37 +190,37 @@ class Xenics(Camera):
     def close(self):
         if self._camera.is_capturing:
             try:
-                print("Stop capturing")
+                logger.info(f"Camera {self._id} stopping capture")
                 self._camera.stop_capture()
-                print("Close Camera")
+                logger.info(f"Camera {self._id} closing")
                 self._camera.close()
             except XenethAPIException as e:
-                print(e.message)
+                logger.error(f"Camera {self._id} close error: {e.message}")
 
     def __del__(self):
         self.close()
-        print(f"Camera {self._id} closed")
+        logger.info(f"Camera {self._id} closed")
 
     def set_exposure_ms(self, exposure_ms):
         try:
             self._camera.set_property_value('ExposureTime', exposure_ms * 1e03)
             self.exposure_ms = exposure_ms
         except XenethAPIException as e:
-            print(e.message)
+            logger.error(f"Camera {self._id} exposure setting error: {e.message}")
 
     def get_exposure_ms(self):
         try:
             exposure_us = self._camera.get_property_value('ExposureTime')
             return exposure_us/1000.0
         except XenethAPIException as e:
-            print(e.message)
+            logger.error(f"Camera {self._id} exposure reading error: {e.message}")
             return None
 
     def stop_stream(self):
         """Stop streaming but keep the camera running"""
-        print(f"Camera {self._id} stopping stream...")
+        logger.info(f"Camera {self._id} stopping stream...")
         self.streamOn = False
-        print(f"Camera {self._id} stream flag set to: {self.streamOn}")
+        logger.debug(f"Camera {self._id} stream flag set to: {self.streamOn}")
 
     def start_stream(self):
         self.streamOn = True
@@ -264,7 +272,7 @@ class Xenics(Camera):
         # Get current frame
         frame_to_save = None
         # First try to use existing current frame
-        if self.self._buffer is not None:
+        if self._buffer is not None:
             frame_to_save = cv2.normalize(self._buffer.image_data, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
             logger.debug(f"Camera {self._id}: Using existing frame for save")
         else:

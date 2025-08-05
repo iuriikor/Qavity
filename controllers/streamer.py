@@ -50,6 +50,7 @@ class WebcamStreamer:
                         continue
                         
                     if frame is not None:
+                        logger.debug(f'Streamer: Processing frame for camera {self._camera.id}')
                         _, jpeg = cv2.imencode('.jpg', frame)
                         await websocket.send(jpeg.tobytes())
                         jpeg = None
