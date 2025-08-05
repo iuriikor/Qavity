@@ -5,7 +5,7 @@ import logging
 import sys
 from datetime import datetime
 
-def setup_logging(level=logging.INFO, log_to_file=True):
+def setup_logging(level=logging.WARNING, log_to_file=False):
     """
     Set up logging configuration for the Qavity application.
     
