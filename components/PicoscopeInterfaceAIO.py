@@ -1,7 +1,7 @@
-from dash import html, callback, Input, Output, State, MATCH, ALL, callback_context
+from dash import html, callback, Input, Output, State, MATCH, ALL, callback_context, dcc
 import uuid
 import json
-import dash_core_components as dcc
+# import dash_core_components as dcc
 import dash_mantine_components as dmc
 from config import config, update_config  # Import the config
 from logger_config import get_logger

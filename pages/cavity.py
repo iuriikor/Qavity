@@ -4,7 +4,8 @@ import dash_mantine_components as dmc
 import plotly.graph_objs as go
 import json
 
-from devices import pico, mirny_cavity_drive
+from components.CameraInterfaceAIO import CameraInterfaceAIO
+from devices import pico, mirny_cavity_drive, xenics_cam, streamer3
 from components.PicoscopeInterfaceAIO import PicoscopeInterfaceAIO
 from components.CavityDriveAIO import CavityDriveAIO
 
@@ -20,34 +21,12 @@ def layout():
     cavity_drive_interface = dmc.Flex([
         CavityDriveAIO(aio_id='cavity_drive', name='Fiber EOM cavity drive', device=mirny_cavity_drive, ch=0)
     ])
-
-    # Main layout for cavity control page
-    # return dmc.MantineProvider([
-    #     dmc.Container([
-    #         dmc.Title("Cavity Control", order=1, mb="md"),
-    #
-    #         # Cavity drive interface
-    #         dmc.Card([
-    #             dmc.CardSection([
-    #                 dmc.Title("Cavity Drive Control", order=3, mb="sm"),
-    #                 cavity_drive_interface
-    #             ], withBorder=True, inheritPadding=True, py='md')
-    #         ], withBorder=True, mb="md"),
-    #
-    #         # Picoscope interface
-    #         dmc.Card([
-    #             dmc.CardSection([
-    #                 dmc.Title("Picoscope Control", order=3, mb="sm"),
-    #                 pico_interface
-    #             ], withBorder=True, inheritPadding=True, py='md')
-    #         ], withBorder=True, mb="md"),
-    #
-    #     ], size="xl")
-    # ])
-
+    backplane_camera_interface = CameraInterfaceAIO(aio_id='webcam_3', camera=xenics_cam, streamer=streamer3, name='Backplane detection',
+                                   htmlImg_props={'width': '390px', 'height': '390px'})
     return dmc.MantineProvider([
         dmc.Flex([
             cavity_drive_interface,
             pico_interface,
+            backplane_camera_interface,
         ], direction='row', wrap='wrap')
     ])

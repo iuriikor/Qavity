@@ -5,7 +5,7 @@ import logging
 import sys
 from datetime import datetime
 
-def setup_logging(level=logging.WARNING, log_to_file=False):
+def setup_logging(level=logging.DEBUG, log_to_file=False):
     """
     Set up logging configuration for the Qavity application.
     
@@ -44,11 +44,11 @@ def setup_logging(level=logging.WARNING, log_to_file=False):
             print(f"Warning: Could not create log file: {e}")
     
     # Set logging levels for noisy libraries
-    logging.getLogger('dash').setLevel(logging.WARNING)
-    logging.getLogger('werkzeug').setLevel(logging.WARNING)
-    logging.getLogger('cherrypy').setLevel(logging.WARNING)
-    logging.getLogger('hypercorn').setLevel(logging.WARNING)
-    logging.getLogger('quart').setLevel(logging.WARNING)
+    logging.getLogger('dash').setLevel(logging.DEBUG)
+    logging.getLogger('werkzeug').setLevel(logging.DEBUG)
+    logging.getLogger('cherrypy').setLevel(logging.DEBUG)
+    logging.getLogger('hypercorn').setLevel(logging.DEBUG)
+    logging.getLogger('quart').setLevel(logging.DEBUG)
     
     return root_logger
 
