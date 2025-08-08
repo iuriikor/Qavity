@@ -47,6 +47,13 @@ class Xenics(Camera):
             if self._camera.is_initialized:
                 self.sensor_width = self._camera.max_width
                 self.sensor_height = self._camera.max_height
+                self.roi_x_tl = int(self._camera.get_property_value("OffsetX"))
+                width = int(self._camera.get_property_value("Width"))
+                self.roi_x_br = int(self.roi_x_tl + width)
+                self.roi_y_tl = int(self._camera.get_property_value("OffsetY"))
+                height = int(self._camera.get_property_value("Height"))
+                self.roi_y_br = int(self.roi_y_tl + height)
+
                 self.set_exposure_ms(exposure_ms)
                 self._camera.start_capture()
                 logger.info(f"Camera {self._id} initialized")
@@ -175,12 +182,12 @@ class Xenics(Camera):
             logger.debug('XENICS: buffer initialized correctly')
             if self._camera.get_frame(self._buffer, flags=XGetFrameFlags.XGF_Blocking):
                 logger.debug('XENICS: image acquired and not None')
-                img = cv2.normalize(self._buffer.image_data, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
+                # img = cv2.normalize(self._buffer.image_data, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
                 # Apply background subtraction if enabled
                 if self.remove_bg and self.background_image is not None:
-                    processed_frame = self._apply_background_subtraction(img)
+                    processed_frame = self._apply_background_subtraction(self._buffer.image_data)
                 else:
-                    processed_frame = img
+                    processed_frame = self._buffer.image_data
                 
                 # Convert 16-bit to 8-bit for streaming display
                 # Use the full dynamic range of the current frame
@@ -277,13 +284,13 @@ class Xenics(Camera):
         frame_to_save = None
         # First try to use existing current frame
         if self._buffer is not None:
-            frame_to_save = cv2.normalize(self._buffer.image_data, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
+            frame_to_save = self._buffer.image_data
             logger.debug(f"Camera {self._id}: Using existing frame for save")
         else:
             # Try to get a new frame
             logger.debug(f"Camera {self._id}: Getting new frame for save")
             self._camera.get_frame(self._buffer, flags=XGetFrameFlags.XGF_Blocking)
-            frame_to_save = cv2.normalize(self._buffer.image_data, None, 0, 65535, cv2.NORM_MINMAX, dtype=cv2.CV_16U)
+            frame_to_save = self._buffer.image_data
 
         # Check if we have a valid frame
         if frame_to_save is None:

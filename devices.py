@@ -33,13 +33,13 @@ def save_as_bin(data, file_path):
 thorSDK = TLCameraSDK()
 available_cameras = thorSDK.discover_available_cameras()
 thorcam_1 = ThorCam(available_cameras[0], thorSDK)
-thorcam_1.initialize(10, 30)
+thorcam_1.initialize(10, 20)
 thorcam_2 = ThorCam(available_cameras[1], thorSDK)
 thorcam_2.initialize(10, 20, rotate_img=True)
 
 xenics_url = 'cam://0'
 xenics_cam = Xenics(xenics_url)
-xenics_cam.initialize(1, 0.01)
+xenics_cam.initialize(5, 0.01)
 # CAMERA STREAMERS (sockets)
 logger.info("Initializing camera streamers...")
 time.sleep(0.2)  # Allow cameras to fully initialize
@@ -80,7 +80,9 @@ daq_update_rate = 10
 daq_card = cDAQ9174()
 # Configure DAQ with actual channels
 daq_channels = ['cDAQ1Mod1/ai0', 'cDAQ1Mod1/ai1', 'cDAQ1Mod1/ai2', 'cDAQ1Mod1/ai3',
-                'cDAQ1Mod2/ai0', 'cDAQ1Mod2/ai1', 'cDAQ1Mod2/ai2', 'cDAQ1Mod2/ai3']
+                'cDAQ1Mod2/ai0', 'cDAQ1Mod2/ai1', 'cDAQ1Mod2/ai2', 'cDAQ1Mod2/ai3',
+                'cDAQ1Mod3/ai0', 'cDAQ1Mod3/ai1', 'cDAQ1Mod3/ai2', 'cDAQ1Mod3/ai3',
+                'cDAQ1Mod4/ai0', 'cDAQ1Mod4/ai1', 'cDAQ1Mod4/ai2', 'cDAQ1Mod4/ai3']
 daq_card.initialize(channels=daq_channels, sample_rate=daq_sampling_rate)
 
 # Create DAQ streamer with specific parameters

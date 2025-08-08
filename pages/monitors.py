@@ -17,7 +17,7 @@ def layout():
 
     # Create a list of available channels for the selectors
     channel_options = [
-        {'value': ch, 'label': ch.split('/')[-1]}
+        {'value': ch, 'label': ch}
         for ch in daq_card.channels
     ]
 
@@ -54,12 +54,12 @@ def layout():
     plot_configs = config.get('plots', [])
     
     # Make sure we have 4 plots defined
-    while len(plot_configs) < 4:
+    while len(plot_configs) < 6:
         plot_configs.append({})
     
     # Plots with settings dropdowns
     graphs = []
-    for i in range(4):
+    for i in range(6):
         # Get configuration for this plot with defaults if not provided
         plot_config = plot_configs[i] if i < len(plot_configs) else {}
         title = plot_config.get('title', f"Plot {i + 1}")
@@ -173,9 +173,9 @@ def layout():
             # Controls
             control_section,
             
-            # Plots in a simple grid - 2x2 layout
+            # Plots in a simple grid - 2x3 layout
             dmc.SimpleGrid(
-                cols=2,
+                cols=3,
                 children=graphs,
                 spacing="md"
             ),

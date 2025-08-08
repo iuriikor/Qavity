@@ -5,7 +5,7 @@
   },
   "plots": [
     {
-      "title": "Forward Monitors",
+      "title": "Forward Monitors - Horizontal axis",
       "channels": [
         "cDAQ1Mod1/ai0",
         "cDAQ1Mod1/ai1"
@@ -22,9 +22,45 @@
       "display_samples": "1000"
     },
     {
+      "title": "Forward Monitors - Vertical axis",
+      "channels": [
+        "cDAQ1Mod1/ai2",
+        "cDAQ1Mod1/ai3"
+      ],
+      "legend_strings": [
+        "Mon+",
+        "Mon-"
+      ],
+      "y_scale_mode": "auto",
+      "y_min": 0,
+      "y_max": 1,
+      "width": 600,
+      "height": 200,
+      "display_samples": "1000"
+    },
+    {
+      "title": "Heterodyne monitors",
+      "channels": [
+        "cDAQ1Mod2/ai0",
+        "cDAQ1Mod2/ai1",
+        "cDAQ1Mod2/ai2"
+      ],
+      "legend_strings": [
+        "Mon+",
+        "Mon-",
+        "Mon Diff"
+      ],
+      "y_scale_mode": "auto",
+      "y_min": -10,
+      "y_max": 10,
+      "width": 600,
+      "height": 200,
+      "display_samples": "1000"
+    },
+    {
       "title": "PDH",
       "channels": [
-        "cDAQ1Mod1/ai2"
+        "cDAQ1Mod3/ai0"
       ],
       "legend_strings": [
         "PDH signal"
@@ -39,8 +75,8 @@
     {
       "title": "PID Out",
       "channels": [
-        "cDAQ1Mod1/ai3",
-        "cDAQ1Mod2/ai0"
+        "cDAQ1Mod3/ai1",
+        "cDAQ1Mod3/ai2"
       ],
       "legend_strings": [
         "Fast Out",
@@ -114,15 +150,17 @@
     }
   },
   "14440": {
-    "background_subtraction_enabled": false,
+    "background_subtraction_enabled": true,
     "save_folder_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img",
-    "save_image_name": "loading_chamber_bg.png",
-    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\loading_chamberbg.png"
+    "save_image_name": "loading_chamber_bg",
+    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\loading_chamber_bg_2.png"
   },
   "cam://0": {
-    "save_image_name": "backplane",
-    "save_folder_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img",
-    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\bg.png",
-    "background_subtraction_enabled": false
+    "roi": {
+      "x_tl": 0,
+      "y_tl": 0,
+      "x_br": 319,
+      "y_br": 255
+    }
   }
 }

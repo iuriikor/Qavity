@@ -354,7 +354,7 @@ app.clientside_callback(
 )
 
 # Graph update callbacks for each plot with per-plot settings
-for plot_idx in range(4):
+for plot_idx in range(6):
     app.clientside_callback(
         f"""
         function(dataSignal, channelIndices, yScaleMode, yMin, yMax, displaySamples, legendStrings, plotConfigStore) {{
