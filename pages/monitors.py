@@ -184,7 +184,7 @@ def layout():
             websocket,
             hidden_div,
             
-        ], size="xl")
+        ], fluid=True, px="md")
     ])
 
 
