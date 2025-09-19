@@ -174,8 +174,7 @@ def update_timer(n_intervals, total_time):
 @callback(
     Output('distance-disp', 'children', allow_duplicate=True),
     [Input('detuning_ctrl', 'value'),
-     Input('time_ctrl', 'value')],
-    prevent_initial_call=True
+     Input('time_ctrl', 'value')]
 )
 def update_distance_info(detuning, time):
     if detuning is None or time is None:
