@@ -48,8 +48,8 @@ def layout():
                                     debounce=True, radius=3,
                                     persistence=1, persistence_type='local',
                                     id='time_ctrl')
-    info_field = dmc.Text(['Total distance: Not implemented yet'], id='distance-disp')
-    timer_display = dmc.Text(['Timer: 0s'], id='timer-display', size='lg', weight=500, style={'color': '#1976d2'})
+    info_field = dmc.Text(['Velocity: 0 mm/s, Total distance: 0 mm'], id='distance-disp')
+    timer_display = dmc.Text(['Timer: 0s'], id='timer-display', size='lg', fw=500, style={'color': '#1976d2'})
     move_particles_btn = dmc.Button('Move Particles', id='move-particles-btn', n_clicks=0)
     
     timer_interval = dcc.Interval(id='timer-interval', interval=1000, n_intervals=0, disabled=True)
@@ -170,3 +170,19 @@ def update_timer(n_intervals, total_time):
         return ['Timer: Completed'], True
     else:
         return [f'Timer: {remaining_time}s'], False
+
+@callback(
+    Output('distance-disp', 'children', allow_duplicate=True),
+    [Input('detuning_ctrl', 'value'),
+     Input('time_ctrl', 'value')],
+    prevent_initial_call=True
+)
+def update_distance_info(detuning, time):
+    if detuning is None or time is None:
+        return ['Velocity: 0 m/s, Total distance: 0 m']
+    
+    lambda_wavelength = 1064e-9  # 1064 nanometers in meters
+    velocity = detuning * lambda_wavelength / 2  # m/s
+    total_distance = velocity * time  # meters
+    
+    return [f'Velocity: {velocity*1e03:.4f} mm/s, Total distance: {total_distance*1e03:.4f} mm']
