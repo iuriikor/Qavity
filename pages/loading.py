@@ -139,6 +139,7 @@ def update_all_generators(n_clicks):
             Input('move-particles-btn', 'n_clicks'),
             State('detuning_ctrl', 'value'),
             State('time_ctrl', 'value'),
+            running=[(Output('move-particles-btn', 'loading'), True, False)],
             prevent_initial_call=True
         )
 def move_particles(btn_clicked, detuning, time):
