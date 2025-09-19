@@ -134,14 +134,13 @@ def update_all_generators(n_clicks):
     return [True] * len(matching_outputs)
 
 @callback(
-    [Output('distance-disp', 'children'),
-     Output('timer-interval', 'disabled'),
-     Output('timer-interval', 'n_intervals')],
-    Input('move-particles-btn', 'n_clicks'),
-    State('detuning_ctrl', 'value'),
-    State('time_ctrl', 'value'),
-    prevent_initial_call=True
-)
+    [Output('timer-interval', 'disabled'),
+            Output('timer-interval', 'n_intervals')],
+            Input('move-particles-btn', 'n_clicks'),
+            State('detuning_ctrl', 'value'),
+            State('time_ctrl', 'value'),
+            prevent_initial_call=True
+        )
 def move_particles(btn_clicked, detuning, time):
     # global exp_path
     logger.info('Button clicked - moving particles')
@@ -151,7 +150,7 @@ def move_particles(btn_clicked, detuning, time):
     # }
     # update_script_values_by_lines(exp_path, update_dict)
     urukul_loading.move_particles(detuning, time)
-    return ['Running...'], False, 0
+    return False, 0
 
 @callback(
     [Output('timer-display', 'children'),
