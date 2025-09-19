@@ -1,0 +1,18 @@
+The current folder contains a project with user interface designed to control a quantum optics
+experiment. The project is written in Python using Dash package. It is structured as follows.
+
+The main page layout is defined in app.py file. The app uses a Quart server for websockets that
+transmit data, and a Flask server to handle the frontend. Both are defined in the file server.py.
+The Quart server is served using hypercorn, and the Flask server is served in cherrypy, both of
+which are started using run.py file. The app consists of multiple pages, which are defined in the folder
+pages. The folder components contains code with description of Dash AIO (All-in-one) components, which
+are just an assembly of elementary components, and are used for convenience. The code for controlling
+hardware is in the folder controllers. The objects used for interfacing with hardware are initialized
+in the file devices.py in the root folder. This should be everything you need.
+
+I would like you to do the following thing.
+
+In the folder pages/loading.py you can find an object with the name run_loading_card. In contains control
+elements for setting detuning between two RF tones for a certain number of seconds, set in the time_field
+object. I would like you to add a timer display to the run_loading_card object, which would count down
+the number of seconds set in the time_field.

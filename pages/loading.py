@@ -1,5 +1,5 @@
 import dash
-from dash import callback, Input, Output, State, MATCH, ALL, callback_context, html
+from dash import callback, Input, Output, State, MATCH, ALL, callback_context, html, dcc
 
 import dash_mantine_components as dmc
 
@@ -49,7 +49,10 @@ def layout():
                                     persistence=1, persistence_type='local',
                                     id='time_ctrl')
     info_field = dmc.Text(['Total distance: Not implemented yet'], id='distance-disp')
+    timer_display = dmc.Text(['Timer: 0s'], id='timer-display', size='lg', weight=500, style={'color': '#1976d2'})
     move_particles_btn = dmc.Button('Move Particles', id='move-particles-btn', n_clicks=0)
+    
+    timer_interval = dcc.Interval(id='timer-interval', interval=1000, n_intervals=0, disabled=True)
 
     run_loading_card.children = [
         dmc.Flex([
@@ -60,8 +63,12 @@ def layout():
             info_field
         ], justify='center'),
         dmc.Flex([
+            timer_display
+        ], justify='center'),
+        dmc.Flex([
             move_particles_btn,
-        ], justify='center')
+        ], justify='center'),
+        timer_interval
     ]
 
     loading_card.children = [title, sync_btn, aom_controls, run_loading_card]
@@ -127,7 +134,9 @@ def update_all_generators(n_clicks):
     return [True] * len(matching_outputs)
 
 @callback(
-    Output('distance-disp', 'children'),
+    [Output('distance-disp', 'children'),
+     Output('timer-interval', 'disabled'),
+     Output('timer-interval', 'n_intervals')],
     Input('move-particles-btn', 'n_clicks'),
     State('detuning_ctrl', 'value'),
     State('time_ctrl', 'value'),
@@ -142,4 +151,22 @@ def move_particles(btn_clicked, detuning, time):
     # }
     # update_script_values_by_lines(exp_path, update_dict)
     urukul_loading.move_particles(detuning, time)
-    return ['Running...']
+    return ['Running...'], False, 0
+
+@callback(
+    [Output('timer-display', 'children'),
+     Output('timer-interval', 'disabled', allow_duplicate=True)],
+    Input('timer-interval', 'n_intervals'),
+    State('time_ctrl', 'value'),
+    prevent_initial_call=True
+)
+def update_timer(n_intervals, total_time):
+    if total_time is None or total_time <= 0:
+        return ['Timer: 0s'], True
+    
+    remaining_time = max(0, total_time - n_intervals)
+    
+    if remaining_time <= 0:
+        return ['Timer: Completed'], True
+    else:
+        return [f'Timer: {remaining_time}s'], False
