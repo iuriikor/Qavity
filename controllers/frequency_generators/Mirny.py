@@ -36,6 +36,7 @@ class MirnyFrequencyGenerator(FrequencyGenerator):
         self.ramp_params["Ending frequency kHz"] = channel_params[0]["frequency"]/1e03
         self.ramp_params["Frequency step kHz"] = 1
         self.ramp_params["Delay seconds"] = 0.1
+        self.ramp_params["Attenuation"] = 15.0
 
         self.output_updated = False
         self.connect()
@@ -146,6 +147,7 @@ class MirnyFrequencyGenerator(FrequencyGenerator):
                 return False
 
             self.channel_params[channel]['attenuation'] = attenuation
+            self.ramp_params["Attenuation"] = attenuation
             self.output_updated = False
             return True
         except Exception as e:
@@ -294,11 +296,13 @@ class MirnyFrequencyGenerator(FrequencyGenerator):
         step_update_line = 27
         delay_update_line = 29
         turn_off_update_line = 31
+        att_update_line = 32
         code_updates = {start_freq_update_line: float(self.ramp_params["Starting frequency kHz"]),
                         end_freq_update_line: float(self.ramp_params["Ending frequency kHz"]),
                         step_update_line: float(self.ramp_params["Frequency step kHz"]),
                         delay_update_line: float(self.ramp_params["Delay seconds"]),
-                        turn_off_update_line: False}
+                        turn_off_update_line: False,
+                        att_update_line: float(self.ramp_params["Attenuation"])}
         try:
             update_script_values_by_lines(script_path, code_updates)
             self.logger.info('UPDATING SCRIPT TO RAMP CAVITY DRIVE FREQUENCY')

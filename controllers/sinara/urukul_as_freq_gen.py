@@ -30,8 +30,8 @@ class AOM_ctr(EnvExperiment):
         att_ch2 = 15.0
         att_ch3 = 15.0
         # Output state
-        ch0_on = True
-        ch1_on = True
+        ch0_on = False
+        ch1_on = False
         ch2_on = False
         ch3_on = False
 

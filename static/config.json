@@ -33,7 +33,7 @@
       ],
       "y_scale_mode": "auto",
       "y_min": 0,
-      "y_max": 1,
+      "y_max": 10,
       "width": 600,
       "height": 200,
       "display_samples": "1000"
@@ -102,19 +102,12 @@
     }
   ],
   "picoscope_1": {
-    "data_path": "C:\\Users\\CavLev\\Documents\\Data\\20250721_cavity_scan",
-    "measurement_set_name": "cavity_scan_timetrace",
-    "sampling_frequency": "2",
-    "acquisition_time": "10",
+    "data_path": "C:\\Users\\CavLev\\Documents\\Data\\20250907\\TEM00_TEM01",
+    "measurement_set_name": "TEM00_TEM01",
+    "sampling_frequency": "4",
+    "acquisition_time": "6",
     "resolution": "14",
-    "Comments": {
-      "experiment": "cavity scan",
-      "number of traps": 1,
-      "H Drive Frequency MHz": 50,
-      "H Drive Power mV": 170,
-      "V Drive Frequency MHz": 50,
-      "V Drive Power mV": 170
-    },
+    "Comments": "",
     "channels": {
       "A": {
         "enabled": "True",
@@ -122,7 +115,7 @@
       },
       "B": {
         "enabled": "True",
-        "range": "10"
+        "range": "1"
       },
       "C": {
         "enabled": "True",
@@ -130,30 +123,30 @@
       },
       "D": {
         "enabled": "True",
-        "range": "5"
+        "range": "0.5"
       }
     }
   },
   "Fiber EOM cavity drive": {
-    "Output frequency": 383483,
-    "Output attenuation": 23,
-    "Output on": true,
-    "TEM00 - TEM01 separation kHz": 488483,
-    "Current detuning kHz": 5000,
-    "Target detuning kHz": 5000,
+    "Output frequency": 384252,
+    "Output attenuation": 20,
+    "Output on": false,
+    "TEM00 - TEM01 separation kHz": 488252,
+    "Current detuning kHz": 4000,
+    "Target detuning kHz": 4000,
     "Scripts updated": true,
     "Ramp": {
-      "Starting frequency kHz": 383483,
-      "Ending frequency kHz": 383483,
+      "Starting frequency kHz": 384252,
+      "Ending frequency kHz": 384252,
       "Frequency step kHz": 1,
       "Delay seconds": 0.01
     }
   },
   "14440": {
-    "background_subtraction_enabled": true,
+    "background_subtraction_enabled": false,
     "save_folder_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img",
     "save_image_name": "loading_chamber_bg",
-    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\loading_chamber_bg_2.png"
+    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\20250828_155331_loading_chamber_bg.png"
   },
   "cam://0": {
     "roi": {
@@ -161,6 +154,13 @@
       "y_tl": 0,
       "x_br": 319,
       "y_br": 255
-    }
+    },
+    "background_subtraction_enabled": false
+  },
+  "26164": {
+    "background_subtraction_enabled": false,
+    "save_folder_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img",
+    "save_image_name": "science_chamber_outside_bg",
+    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\20250828_155553_science_chamber_outside_bg.png"
   }
 }

@@ -33,13 +33,13 @@ def save_as_bin(data, file_path):
 thorSDK = TLCameraSDK()
 available_cameras = thorSDK.discover_available_cameras()
 thorcam_1 = ThorCam(available_cameras[0], thorSDK)
-thorcam_1.initialize(10, 20)
+thorcam_1.initialize(10, 5)
 thorcam_2 = ThorCam(available_cameras[1], thorSDK)
 thorcam_2.initialize(10, 20, rotate_img=True)
 
-xenics_url = 'cam://0'
-xenics_cam = Xenics(xenics_url)
-xenics_cam.initialize(5, 0.01)
+# xenics_url = 'cam://0'
+# xenics_cam = Xenics(xenics_url)
+# xenics_cam.initialize(5, 0.01)
 # CAMERA STREAMERS (sockets)
 logger.info("Initializing camera streamers...")
 time.sleep(0.2)  # Allow cameras to fully initialize
@@ -48,8 +48,8 @@ logger.info("Streamer 1 initialized, waiting before creating streamer 2...")
 time.sleep(0.5)  # Small delay between streamer initializations
 streamer2 = WebcamStreamer(thorcam_2, "/stream2")
 logger.info("Streamer 2 initialized, waiting before creating streamer 3...")
-streamer3 = WebcamStreamer(xenics_cam, "/stream3")
-logger.info("All streamers initialized successfully")
+# streamer3 = WebcamStreamer(xenics_cam, "/stream3")
+# logger.info("All streamers initialized successfully")
 
 # FREQUENCY GENERATORS
 urukul_loading_params = {0 : {'frequency': 110000.0e03, 'amplitude': 0.45, 'attenuation': 15.0, 'on': False},
