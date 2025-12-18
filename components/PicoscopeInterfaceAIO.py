@@ -768,7 +768,7 @@ class PicoscopeInterfaceAIO(html.Div):  # html.Div will be the "parent" componen
 
         logger.info(f"Arming trigger for {num_chunks} block acquisitions...")
         device.set_trigger(channel='A', threshold=1.0, direction='Rising',
-                           delay=0, auto_trigger=False, timeout_ms=1000)
+                           delay=0, auto_trigger=False, timeout_ms=10000)
         success = device.run_multi_block_acquisition(
             data_dir=data_path,
             measurement_set_name=measurement_name,

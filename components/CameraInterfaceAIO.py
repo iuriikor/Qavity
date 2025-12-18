@@ -183,6 +183,15 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         else:
             htmlImg_props['style'] = default_img_style
 
+        if 'width' in htmlImg_props:
+            interface_width = htmlImg_props['width']
+        else:
+            interface_width = 400
+        if 'height' in htmlImg_props:
+            interface_height = htmlImg_props['height']
+        else:
+            interface_height = 400
+
         # Define the component's layout
         # cam_name = dmc.CardSection([dmc.Text(name, size='xl')],
         #                     withBorder=True, py="xs", inheritPadding=True)
@@ -286,7 +295,9 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         hidden_div = html.Div([], id=self.ids.hidden_div(aio_id), style={'display': 'none'})
         layout = dmc.Card(
             children=[],
-            style={'width': '400px', 'padding': 'xs', 'margin': '10px'}
+            style={'width': f'{interface_width}px',
+                   'height': f'{interface_height}px',
+                   'padding': 'xs', 'margin': '10px'}
         )
         layout.children = [menu, camera_screen, hidden_div]
         super().__init__(layout)

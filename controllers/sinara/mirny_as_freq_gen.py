@@ -20,10 +20,10 @@ class MirnyAsFreqGen(EnvExperiment):
     @kernel
     def run(self):
         # Define output frequency and attenuation
-        drive_freq_kHz = 384.252
-        att_dB = 20.0
+        drive_freq_kHz = 385438.0
+        att_dB = 14.0
         # Set the output on or off
-        turn_on = False
+        turn_on = True
 
         # Scan
         self.core.reset()

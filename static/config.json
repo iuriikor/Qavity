@@ -102,42 +102,47 @@
     }
   ],
   "picoscope_1": {
-    "data_path": "C:\\Users\\CavLev\\Documents\\Data\\20250907\\TEM00_TEM01",
-    "measurement_set_name": "TEM00_TEM01",
-    "sampling_frequency": "4",
-    "acquisition_time": "6",
+    "data_path": "C:\\Users\\CavLev\\Documents\\Data\\20251212_DC_measurement\\4M\\center_of_mass",
+    "measurement_set_name": "center_of_mass_scan",
+    "sampling_frequency": "1",
+    "acquisition_time": "17",
     "resolution": "14",
-    "Comments": "",
+    "Comments": {
+      "Trap 1 f1, MHz": 51.48,
+      "Trap 1 f2, MHz": 48.52,
+      "Trap 2 f1, MHz": 47.0,
+      "Trap 2 f2, MHz": 53.0
+    },
     "channels": {
       "A": {
         "enabled": "True",
-        "range": "20"
+        "range": "10"
       },
       "B": {
         "enabled": "True",
-        "range": "1"
+        "range": "0.5"
       },
       "C": {
         "enabled": "True",
-        "range": "0.5"
+        "range": "5"
       },
       "D": {
         "enabled": "True",
-        "range": "0.5"
+        "range": "10"
       }
     }
   },
   "Fiber EOM cavity drive": {
-    "Output frequency": 384252,
-    "Output attenuation": 20,
-    "Output on": false,
-    "TEM00 - TEM01 separation kHz": 488252,
-    "Current detuning kHz": 4000,
-    "Target detuning kHz": 4000,
+    "Output frequency": 385438,
+    "Output attenuation": 14,
+    "Output on": true,
+    "TEM00 - TEM01 separation kHz": 488438,
+    "Current detuning kHz": 3000,
+    "Target detuning kHz": 3000,
     "Scripts updated": true,
     "Ramp": {
-      "Starting frequency kHz": 384252,
-      "Ending frequency kHz": 384252,
+      "Starting frequency kHz": 385438,
+      "Ending frequency kHz": 385438,
       "Frequency step kHz": 1,
       "Delay seconds": 0.01
     }
@@ -145,8 +150,8 @@
   "14440": {
     "background_subtraction_enabled": false,
     "save_folder_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img",
-    "save_image_name": "loading_chamber_bg",
-    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\20250828_155331_loading_chamber_bg.png"
+    "save_image_name": "loading_chamber_bg_1ms",
+    "background_path": "C:\\Users\\CavLev\\Documents\\Qavity\\static\\img\\20251029_141340_loading_chamber_bg_1ms.png"
   },
   "cam://0": {
     "roi": {

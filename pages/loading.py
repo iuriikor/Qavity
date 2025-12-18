@@ -79,16 +79,19 @@ def layout():
     return dmc.MantineProvider(
         [dmc.Flex(
             [
-                CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1, streamer=streamer1, name='Loading chamber',
-                                   htmlImg_props={'width': '390px', 'height': '250px'}),
+                dmc.Flex([
                 CameraInterfaceAIO(aio_id='webcam_2', camera=thorcam_2, streamer=streamer2,
                                    name='Science chamber outside',
-                                   htmlImg_props={'width': '390px', 'height': '550px'}),
-                # CameraInterfaceAIO(aio_id='webcam_3', camera=xenics_cam, streamer=streamer3,
-                #                    name='Science chamber inside'),
+                                   htmlImg_props={'width': '320px', 'height': '400px'}),
+                CameraInterfaceAIO(aio_id='webcam_3', camera=pseyecam, streamer=streamer3,
+                                   name='Loading chamber inside',
+                                   htmlImg_props={'width': '320px', 'height': '320px'}),],
+                direction='column'),
+                CameraInterfaceAIO(aio_id='webcam_1', camera=thorcam_1, streamer=streamer1, name='Particle intensity',
+                                   htmlImg_props={'width': '900px', 'height': '750px'}),
                 WebSocket(url=f"ws://127.0.0.1:5000/stream1", id="ws1"),
                 WebSocket(url=f"ws://127.0.0.1:5000/stream2", id="ws2"),
-                # WebSocket(url=f"ws://127.0.0.1:5000/stream3", id="ws3"),
+                WebSocket(url=f"ws://127.0.0.1:5000/stream3", id="ws3"),
                 # CameraInterfaceAIO(aio_id='webcam_1', placeholder=img1),
                 # CameraInterfaceAIO(aio_id='webcam_2', placeholder=img2),
                 loading_card,
@@ -172,7 +175,7 @@ def update_timer(n_intervals, total_time):
         return [f'Timer: {remaining_time}s'], False
 
 @callback(
-    Output('distance-disp', 'children', allow_duplicate=True),
+    Output('distance-disp', 'children'),
     [Input('detuning_ctrl', 'value'),
      Input('time_ctrl', 'value')]
 )

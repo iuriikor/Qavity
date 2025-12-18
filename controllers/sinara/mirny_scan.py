@@ -22,15 +22,15 @@ class MirnyRamp(EnvExperiment):
     @kernel
     def run(self):
         # Define scan parameters
-        start_freq_kHz = 384252.0
-        end_freq_kHz = 384252.0
+        start_freq_kHz = 385438.0
+        end_freq_kHz = 385438.0
         # STEP HAS TO ALWAYS BE POSITIVE
         step_kHz = 1.0
         # Delay between steps, seconds
         step_delay = 0.01
         # Turn off the generator at the end
         turn_off = False
-        att_set = 20.0
+        att_set = 15.0
 
         # Scan
         self.core.reset()

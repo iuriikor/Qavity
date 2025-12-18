@@ -21,7 +21,7 @@ class AOM_ctr(EnvExperiment):
         freq_ch3 = 300000.0
         # Amplitudes
         amp_ch0 = 0.45
-        amp_ch1 = 0.45
+        amp_ch1 = 0.44
         amp_ch2 = 0.5
         amp_ch3 = 0.5
         # Attenuations
@@ -30,8 +30,8 @@ class AOM_ctr(EnvExperiment):
         att_ch2 = 15.0
         att_ch3 = 15.0
         # Output state
-        ch0_on = False
-        ch1_on = False
+        ch0_on = True
+        ch1_on = True
         ch2_on = False
         ch3_on = False
 

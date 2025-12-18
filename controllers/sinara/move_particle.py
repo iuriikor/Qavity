@@ -13,8 +13,8 @@ class AOM_ctr(EnvExperiment):
     @kernel  # This code runs on the FPGA
     def run(self):
         # Externally set parameters
-        detuning = 10000.0 # Conveyor belt detuning, <0 for transport to science chamber
-        transport_time = 10.0 # time for which to move the particle
+        detuning = 40000.0 # Conveyor belt detuning, <0 for transport to science chamber
+        transport_time = 300.0 # time for which to move the particle
         # Loading AOM (CH0)
         # freq_load = 110000000
         freq_load = 110000000.0
