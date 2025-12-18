@@ -29,6 +29,31 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             'subcomponent': 'exposureControlInput',
             'aio_id': aio_id
         }
+        gainControlInput = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'gainControlInput',
+            'aio_id': aio_id
+        }
+        crosshair_checkbox = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'crosshair_checkbox',
+            'aio_id': aio_id
+        }
+        crosshair_container = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'crosshair_container',
+            'aio_id': aio_id
+        }
+        crosshair_h_line = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'crosshair_h_line',
+            'aio_id': aio_id
+        }
+        crosshair_v_line = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'crosshair_v_line',
+            'aio_id': aio_id
+        }
         start_stream_btn = lambda aio_id: {
             'component': 'CameraInterfaceAIO',
             'subcomponent': 'start_stream_btn',
@@ -161,14 +186,17 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         default_bg_enabled = self.camera_config.get('background_subtraction_enabled', False)
         default_save_folder = self.camera_config.get('save_folder_path', 'C:/Data/Images')
         default_save_name = self.camera_config.get('save_image_name', 'image')
+        default_crosshair_enabled = self.camera_config.get('crosshair_enabled', False)
+        default_gain = self.camera_config.get('gain', 0.0)
         
         # Initialize camera with saved settings
-        if camera is not None and default_bg_path:
+        if camera is not None:
             # Load background image if path exists
-            success = camera.set_background_path(default_bg_path)
-            if success:
-                # Set background subtraction state
-                camera.set_background_subtraction(default_bg_enabled)
+            if default_bg_path:
+                success = camera.set_background_path(default_bg_path)
+                if success:
+                    # Set background subtraction state
+                    camera.set_background_subtraction(default_bg_enabled)
         
         # Merge user-supplied properties into default properties
         # Set fixed dimensions and stretch the image to fill the container
@@ -205,6 +233,16 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                              rightSection=dmc.NumberInput(value=default_exp, debounce=True,
                                                           suffix=' ms', w=100,
                                                           id=self.ids.exposureControlInput(aio_id))),
+                dmc.MenuItem("Gain:",
+                             rightSection=dmc.NumberInput(value=default_gain, debounce=True,
+                                                          suffix=' dB', w=100,
+                                                          id=self.ids.gainControlInput(aio_id))),
+                dmc.MenuDivider(),
+                dmc.MenuLabel("Display Options"),
+                dmc.MenuItem(
+                    dmc.Checkbox(label="Draw crosshair", checked=default_crosshair_enabled, size="sm",
+                                id=self.ids.crosshair_checkbox(aio_id))
+                ),
                 dmc.MenuDivider(),
                 dmc.MenuLabel("Region of Interest (ROI)"),
                 # Top-left coordinates row
@@ -285,12 +323,58 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             ], align='center', justify='space-between')
         ], withBorder=True, py="xs", inheritPadding=True)
 
+        # Create crosshair lines with thin red styling
+        crosshair_display = 'block' if default_crosshair_enabled else 'none'
+
+        # Horizontal crosshair line
+        h_line = html.Div(
+            id=self.ids.crosshair_h_line(aio_id),
+            style={
+                'position': 'absolute',
+                'top': '50%',
+                'left': '0',
+                'width': '100%',
+                'height': '1px',
+                'backgroundColor': 'red',
+                'pointerEvents': 'none',
+                'display': crosshair_display
+            }
+        )
+
+        # Vertical crosshair line
+        v_line = html.Div(
+            id=self.ids.crosshair_v_line(aio_id),
+            style={
+                'position': 'absolute',
+                'left': '50%',
+                'top': '0',
+                'width': '1px',
+                'height': '100%',
+                'backgroundColor': 'red',
+                'pointerEvents': 'none',
+                'display': crosshair_display
+            }
+        )
+
+        # Create camera image
         if camera is None:
             logger.warning("Camera not found - using placeholder")
-            camera_screen = html.Img(src=self._placeholder, id=self.ids.htmlImg(aio_id), 
-                                     **htmlImg_props)
+            camera_img = html.Img(src=self._placeholder, id=self.ids.htmlImg(aio_id),
+                                  **htmlImg_props)
         else:
-            camera_screen = html.Img(id=self.ids.htmlImg(aio_id), **htmlImg_props)
+            camera_img = html.Img(id=self.ids.htmlImg(aio_id), **htmlImg_props)
+
+        # Wrap image and crosshair in a container with relative positioning
+        camera_screen = html.Div(
+            id=self.ids.crosshair_container(aio_id),
+            children=[camera_img, h_line, v_line],
+            style={
+                'position': 'relative',
+                'width': '100%',
+                'height': '100%'
+            }
+        )
+
         # Hidden Div to mitigate problems with callbacks without Output
         hidden_div = html.Div([], id=self.ids.hidden_div(aio_id), style={'display': 'none'})
         layout = dmc.Card(
@@ -616,21 +700,84 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         """Save image name to config when it changes"""
         if image_name is None:
             return no_update
-            
+
         # Get the aio_id from the triggered component
         aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
-        
+
         # Get the camera
         try:
             camera, _ = CameraInterfaceAIO._devices[aio_id]
         except Exception as e:
             print(f'Camera using placeholder: {str(e)}')
             return ''
-        
+
         # Save image name to config
         camera_id = str(camera._id)
         current_config = config.get(camera_id, {})
         current_config['save_image_name'] = image_name.strip() if image_name else ''
         update_config({camera_id: current_config})
-        
+
         return ''
+
+    @callback(
+        Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True),
+        Input(ids.gainControlInput(MATCH), 'value'),
+        prevent_initial_call=True
+    )
+    def set_gain(gain):
+        """Set camera gain - placeholder for future API implementation"""
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+
+        # Get the camera
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+        except Exception as e:
+            print(f'Camera using placeholder: {str(e)}')
+            return ''
+
+        # TODO: Connect to camera API when available
+        # camera.set_gain(gain)
+
+        # Save gain value to config
+        camera_id = str(camera._id)
+        current_config = config.get(camera_id, {})
+        current_config['gain'] = gain
+        update_config({camera_id: current_config})
+
+        print(f'Camera {aio_id}: gain value saved to config: {gain} (API not connected yet)')
+        return ''
+
+    @callback(
+        [Output(ids.crosshair_h_line(MATCH), 'style'),
+         Output(ids.crosshair_v_line(MATCH), 'style'),
+         Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True)],
+        Input(ids.crosshair_checkbox(MATCH), 'checked'),
+        [State(ids.crosshair_h_line(MATCH), 'style'),
+         State(ids.crosshair_v_line(MATCH), 'style')],
+        prevent_initial_call=True
+    )
+    def toggle_crosshair(enable_crosshair, h_style, v_style):
+        """Enable or disable crosshair overlay on camera image"""
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+
+        # Update the display property of both crosshair lines
+        h_style['display'] = 'block' if enable_crosshair else 'none'
+        v_style['display'] = 'block' if enable_crosshair else 'none'
+
+        # Save crosshair state to config
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+            camera_id = str(camera._id)
+        except Exception as e:
+            # If camera not found, use aio_id as fallback
+            camera_id = aio_id
+
+        current_config = config.get(camera_id, {})
+        current_config['crosshair_enabled'] = enable_crosshair
+        update_config({camera_id: current_config})
+
+        logger.info(f'Camera {aio_id}: crosshair {"enabled" if enable_crosshair else "disabled"}')
+
+        return h_style, v_style, ''
