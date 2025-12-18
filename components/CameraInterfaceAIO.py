@@ -54,6 +54,16 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             'subcomponent': 'crosshair_v_line',
             'aio_id': aio_id
         }
+        crosshair_h_position = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'crosshair_h_position',
+            'aio_id': aio_id
+        }
+        crosshair_v_position = lambda aio_id: {
+            'component': 'CameraInterfaceAIO',
+            'subcomponent': 'crosshair_v_position',
+            'aio_id': aio_id
+        }
         start_stream_btn = lambda aio_id: {
             'component': 'CameraInterfaceAIO',
             'subcomponent': 'start_stream_btn',
@@ -187,6 +197,8 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         default_save_folder = self.camera_config.get('save_folder_path', 'C:/Data/Images')
         default_save_name = self.camera_config.get('save_image_name', 'image')
         default_crosshair_enabled = self.camera_config.get('crosshair_enabled', False)
+        default_crosshair_h_pos = self.camera_config.get('crosshair_h_position', 50.0)  # Horizontal position as %
+        default_crosshair_v_pos = self.camera_config.get('crosshair_v_position', 50.0)  # Vertical position as %
         default_gain = self.camera_config.get('gain', 0.0)
         
         # Initialize camera with saved settings
@@ -242,6 +254,22 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
                 dmc.MenuItem(
                     dmc.Checkbox(label="Draw crosshair", checked=default_crosshair_enabled, size="sm",
                                 id=self.ids.crosshair_checkbox(aio_id))
+                ),
+                dmc.MenuItem(
+                    dmc.Flex([
+                        dmc.Text("Horizontal:", size="sm", style={"width": "80px"}),
+                        dmc.NumberInput(value=default_crosshair_h_pos, debounce=True,
+                                      suffix=' %', w=100, min=0, max=100, step=0.1,
+                                      id=self.ids.crosshair_h_position(aio_id))
+                    ], gap="xs", align="center")
+                ),
+                dmc.MenuItem(
+                    dmc.Flex([
+                        dmc.Text("Vertical:", size="sm", style={"width": "80px"}),
+                        dmc.NumberInput(value=default_crosshair_v_pos, debounce=True,
+                                      suffix=' %', w=100, min=0, max=100, step=0.1,
+                                      id=self.ids.crosshair_v_position(aio_id))
+                    ], gap="xs", align="center")
                 ),
                 dmc.MenuDivider(),
                 dmc.MenuLabel("Region of Interest (ROI)"),
@@ -331,7 +359,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             id=self.ids.crosshair_h_line(aio_id),
             style={
                 'position': 'absolute',
-                'top': '50%',
+                'top': f'{default_crosshair_v_pos}%',
                 'left': '0',
                 'width': '100%',
                 'height': '1px',
@@ -346,7 +374,7 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
             id=self.ids.crosshair_v_line(aio_id),
             style={
                 'position': 'absolute',
-                'left': '50%',
+                'left': f'{default_crosshair_h_pos}%',
                 'top': '0',
                 'width': '1px',
                 'height': '100%',
@@ -781,3 +809,71 @@ class CameraInterfaceAIO(html.Div):  # html.Div will be the "parent" component
         logger.info(f'Camera {aio_id}: crosshair {"enabled" if enable_crosshair else "disabled"}')
 
         return h_style, v_style, ''
+
+    @callback(
+        [Output(ids.crosshair_v_line(MATCH), 'style', allow_duplicate=True),
+         Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True)],
+        Input(ids.crosshair_h_position(MATCH), 'value'),
+        State(ids.crosshair_v_line(MATCH), 'style'),
+        prevent_initial_call=True
+    )
+    def update_crosshair_h_position(h_position, v_style):
+        """Update horizontal position of vertical crosshair line"""
+        if h_position is None:
+            return no_update, no_update
+
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+
+        # Update the left position of the vertical line
+        v_style['left'] = f'{h_position}%'
+
+        # Save horizontal position to config
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+            camera_id = str(camera._id)
+        except Exception as e:
+            # If camera not found, use aio_id as fallback
+            camera_id = aio_id
+
+        current_config = config.get(camera_id, {})
+        current_config['crosshair_h_position'] = h_position
+        update_config({camera_id: current_config})
+
+        logger.debug(f'Camera {aio_id}: crosshair horizontal position set to {h_position}%')
+
+        return v_style, ''
+
+    @callback(
+        [Output(ids.crosshair_h_line(MATCH), 'style', allow_duplicate=True),
+         Output(ids.hidden_div(MATCH), 'children', allow_duplicate=True)],
+        Input(ids.crosshair_v_position(MATCH), 'value'),
+        State(ids.crosshair_h_line(MATCH), 'style'),
+        prevent_initial_call=True
+    )
+    def update_crosshair_v_position(v_position, h_style):
+        """Update vertical position of horizontal crosshair line"""
+        if v_position is None:
+            return no_update, no_update
+
+        # Get the aio_id from the triggered component
+        aio_id = CameraInterfaceAIO.get_aio_id_from_trigger()
+
+        # Update the top position of the horizontal line
+        h_style['top'] = f'{v_position}%'
+
+        # Save vertical position to config
+        try:
+            camera, _ = CameraInterfaceAIO._devices[aio_id]
+            camera_id = str(camera._id)
+        except Exception as e:
+            # If camera not found, use aio_id as fallback
+            camera_id = aio_id
+
+        current_config = config.get(camera_id, {})
+        current_config['crosshair_v_position'] = v_position
+        update_config({camera_id: current_config})
+
+        logger.debug(f'Camera {aio_id}: crosshair vertical position set to {v_position}%')
+
+        return h_style, ''
